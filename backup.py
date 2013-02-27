@@ -1,6 +1,9 @@
 #!/usr/bin/python
 import os
 import sys
+import glob
+import shutil
+import datetime
 
 from config import *
 try:
@@ -163,13 +166,56 @@ def evernote_sync_to_local(remote, local):
                         file(att_path + "/" + clean_filename(res.attributes.fileName), "w").write(res.data.body)
                 #print files
 
-        #Saving the stat file
-        file(path+"/stats","w").write(str(remote))
+    #Saving the stat file
+    file(path+"/stats","w").write(str(remote))
     
+    deleted_notebooks = []
+    deleted_notes = {}
+    for notebook, local_notes in local.items(): 
+        remote_notes = remote.get(notebook)
+        if remote_notes == None:
+            deleted_notebooks.append(notebook)
+        else:
+            remote_notes = dict(remote_notes)
+            for local_note_id, local_note_data  in dict(local_notes).items():
+                if local_note_id not in remote_notes.keys():
+                    deleted_notes.setdefault(notebook, [])
+                    deleted_notes[notebook].append((local_note_id, local_note_data))
+    if len(deleted_notebooks) > 0 or len(deleted_notes.keys()) > 0:
         if verbose:
             print "Move deleted Notes to trash"
+        time = datetime.datetime.now() 
+        backup_path = cfg_backup_base_url + "/evernote/trash/" + time.strftime("%Y-%m-%d") 
+        try:
+            os.makedirs(backup_path)
+        except:
+            pass
+        if verbose:
+            print " - New Trash Path is %s" % backup_path
+        #TBD: Stats file is missing in this case    
+        for notebook in deleted_notebooks:
+            os.renames(path + "/" + notebook, backup_path + "/" + notebook)
 
+        for notebook, filedata in deleted_notes.items():
+            try:
+                os.makedirs(backup_path + "/"  + notebook)
+            except:
+                pass
+            for note_id, note_data in filedata:
+                nname = clean_filename(note_data['title'])
+                source_path = "%s/%s/%s" % (path, notebook, nname)
+                target_path = "%s/%s/" % (backup_path, notebook)
+                print " - %s to %s " % (source_path, target_path)
+                for mfile in glob.glob(source_path+"*"):
+                    if verbose:
+                        print " - Moving %s to trash " % nname
+                    shutil.move(mfile, target_path)
 
-
+        if os.path.exists(backup_path+"/stats"):
+            old = eval(file(backup_path+"/stats").read())
+            for nb, data in old.items():
+                deleted_notes.setdefault(nb, [])
+                deleted_notes[nb] = deleted_notes[nb] + data
+        file(backup_path+"/stats", "w").write(str(deleted_notes))       
 
 backup_evernote()
