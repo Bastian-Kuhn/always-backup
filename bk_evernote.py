@@ -10,6 +10,7 @@ try:
     from config_bk import *
 except:
     pass
+evernote_basepath = cfg_backup_base_url + "/evernote/notebooks"
 
 import hashlib
 import binascii
@@ -26,18 +27,19 @@ if cfg_evernote_auth_token == "":
     print "Please fill in the Evernote Auth Token first (config.py)"
     sys.exit(1)
 
-def clean_filename(filename):
-    chars = '-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    return ''.join(c for c in filename if c in chars)
-
 def backup_evernote():
     if verbose:
         print "Backup Evernote"
     remote_notes = evernote_get_remote_notes()
-    local_notes = evernote_get_local_notes('evernote/notebooks')
+    local_notes = evernote_get_local_notes()
     evernote_sync_to_local(remote=remote_notes, local=local_notes)
     if verbose:
         print "============ Evernote finish ============"
+
+
+def evernote_clean_filename(filename):
+    chars = '-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    return ''.join(c for c in filename if c in chars)
 
 """
 Get all remote notes from evernote
@@ -83,14 +85,13 @@ def evernote_get_remote_notes():
     return note_list 
 
 """Get all local saved notes """
-def evernote_get_local_notes(what):
-    url = cfg_backup_base_url + "/" + what
+def evernote_get_local_notes():
     try:
-        os.makedirs(url)
+        os.makedirs(evernote_basepath)
     except os.error:
         pass
-    if os.path.exists(url+"/stats"):
-        return eval(file(url+"/stats").read())
+    if os.path.exists(evernote_basepath + "/stats"):
+        return eval(file(evernote_basepath + "/stats").read())
     return {}
 
 """Sync all notes to local"""
@@ -144,10 +145,10 @@ def evernote_sync_to_local(remote, local):
                   # bool withResourcesAlternateData)
             note = note_store.getNote(cfg_evernote_auth_token, save_note_id, True, True, True, True)
             #Saving Content
-            file(save_path + "/" + clean_filename(save_note_data['title']), "w").write(str(note.content))
+            file(save_path + "/" + evernote_clean_filename(save_note_data['title']), "w").write(str(note.content))
             if cfg_evernote_dump:
                 import inspect
-                file(save_path + "/" + clean_filename(save_note_data['title'] + ".dump"), "w")\
+                file(save_path + "/" + evernote_clean_filename(save_note_data['title'] + ".dump"), "w")\
                 .write(str(inspect.getmembers(note)))
 
             #Saving Attachments
@@ -158,12 +159,12 @@ def evernote_sync_to_local(remote, local):
                     files[res.guid]['mime'] = res.mime
                     files[res.guid]['fileName'] = res.attributes.fileName
                     if res.attributes.fileName != None:
-                        att_path = save_path + "/" + clean_filename(save_note_data['title'])+"-files"
+                        att_path = save_path + "/" + evernote_clean_filename(save_note_data['title'])+"-files"
                         try:
                             os.makedirs(att_path)
                         except os.error:
                             pass
-                        file(att_path + "/" + clean_filename(res.attributes.fileName), "w").write(res.data.body)
+                        file(att_path + "/" + evernote_clean_filename(res.attributes.fileName), "w").write(res.data.body)
                 #print files
 
     #Saving the stat file
@@ -202,7 +203,7 @@ def evernote_sync_to_local(remote, local):
             except:
                 pass
             for note_id, note_data in filedata:
-                nname = clean_filename(note_data['title'])
+                nname = evernote_clean_filename(note_data['title'])
                 source_path = "%s/%s/%s" % (path, notebook, nname)
                 target_path = "%s/%s/" % (backup_path, notebook)
                 print " - %s to %s " % (source_path, target_path)
@@ -218,4 +219,5 @@ def evernote_sync_to_local(remote, local):
                 deleted_notes[nb] = deleted_notes[nb] + data
         file(backup_path+"/stats", "w").write(str(deleted_notes))       
 
-backup_evernote()
+
+

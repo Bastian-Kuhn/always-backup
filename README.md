@@ -1,19 +1,22 @@
-bk_cloudbackup
+bk\_cloudbackup
 ==============
 
 Python backup solution for cloud data
 
-The idea behind this script is to have a solution to backup
-my cloud data to my local nas.
-Of course this sript can be used for every linux distribution providing python.
-
+Currently you can backup all Notebooks and Notes of a avernote account
 All you need is the evernote python api and a api key.
+Then, just take a look at config.py and run run\_backup.py
 
-This script is not finished yet.
-Evernote Todo:
- - Format content field
- - Move deleted Notes to a Backup directory
- - Check if i really detected all changed notes
+The Script will connect to evernote, load all notebooks and notes,
+checks for new or updated notes, saves it in you local filesystem
+and move deleted mails into a trash folder. If you want also
+a simple html file is created for each note. But currently the html
+feature is only a proof of concept.
+
+But, this script is not finished yet.
+Some of the todo's:
+ - Create a html file whit better formating and attachments
+ - The system design isnt finished yet
 
 
 
