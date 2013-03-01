@@ -1,4 +1,4 @@
-bk\_cloudbackup
+Always-Backup
 ==============
 
 Python backup solution for cloud data
@@ -17,8 +17,3 @@ But, this script is not finished yet.
 Some of the todo's:
  - Create a html file whit better formating and attachments
  - Creating a web interface for configuration and access to the backuped files
-
-
-
-
-
