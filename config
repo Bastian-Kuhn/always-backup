@@ -1,12 +1,17 @@
-{ "verbose" : True,
-  "run_as_service" : False,
-  "debug" : False,
-  "backup_target" : "",
-  "evernote" : { 
-      "do" : True,
-      "auth_token" : "",
-      "sandbox" : False,
-      "debug_dump" : False,
-      "hmlversion" : True,
-      }
+{ "global" : {  "verbose" : True,
+                "debug" : False,
+                "run_as_service" : False,
+                "base_path" : "/tmp/backup",
+             },
+  "sync_pairs" : [
+    {"source" : { "name" : "evernote", "options" : 
+                    { "auth_token" : "",
+                      "sandbox" : False,
+                      "debug_dump" : False,
+                      "hmlversion" : True,
+    }},
+     "target" : { "name" : "local"},
+     "name" : "Evernote to local",
+    },
+  ],
 }
