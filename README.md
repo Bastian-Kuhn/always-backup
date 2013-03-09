@@ -5,7 +5,8 @@ Python backup solution for cloud data
 
 Currently you can backup all Notebooks and Notes of a avernote account
 All you need is the evernote python api and a api key.
-Then, just take a look at the config file and run service.py
+After staring service.py change to your browser and configure.
+Currently you cant configure the sync pairs. But this will follow in the next days.
 
 The Script will connect to evernote, load all notebooks and notes,
 checks for new or updated notes, saves it in you local filesystem

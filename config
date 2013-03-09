@@ -4,18 +4,9 @@
                 "base_path" : "/tmp/backup",
              },
   "sync_pairs" : [
-    {"source" : { "name" : "evernote", "options" : 
-                    { "auth_token" : "",
-                      "sandbox" : False,
-                      "debug_dump" : False,
-                      "hmlversion" : True,
-    }},
-     "target" : { "name" : "local"},
-     "name" : "Evernote to local",
-    },
   ],
   "webserver" : {
-      "host" : "127.0.0.1",
+      "ip" : "127.0.0.1",
       "port" : 9111,
   },
 }

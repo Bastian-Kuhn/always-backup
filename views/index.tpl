@@ -1,4 +1,4 @@
-%include header
+%include header title=title
 
 Hello Word
 %include footer
