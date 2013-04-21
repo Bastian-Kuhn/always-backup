@@ -32,6 +32,9 @@ def service_web():
 
 def get_diff(source, target):
     missing_files = []
+    if not source or not target:
+        sys.stderr.write("No Data from at least one sync plugin")
+        return []
     for ident, values in source:
         if values['upd_attr'] not in [ y['upd_attr'] for x, y in target ]:
             missing_files.append(( ident, values))
@@ -51,13 +54,13 @@ def service_sync():
                 source_name = job['source']['name']
                 source =  modules.get(source_name)
                 if source == None:
-                    print "Module: %s not found. Skipping sync configuration" % source_name
+                    sys.stderr.write("Module: %s not found. Skipping sync configuration" % source_name)
                     continue
 
                 target_name = job['target']['name']
                 target =  modules.get(target_name)
                 if target == None:
-                    print "Module: %s not found. Skipping sync configuration" % target_name
+                    sys.stderr.write("Module: %s not found. Skipping sync configuration" % target_name)
                     continue
 
                 #Begin Sync
@@ -71,7 +74,7 @@ def service_sync():
 
         else:
             if cfg['global']['verbose']:
-                print "Sync: Nothing to do. Pleas configure at least a sync pair"
+                sys.stderr.write("Sync: Nothing to do. Pleas configure at least a sync pair")
 
         if not cfg['global']['run_as_service']:
             run = False
