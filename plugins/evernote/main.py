@@ -82,6 +82,7 @@ def get_note_list():
                             })
                 file_list.append((n.guid , {
                                             "name"         : n.title,
+                                            "upd_attr"     : n.updateSequenceNum,
                                             "path"         : nbname,
                                             "date"         : n.created,
                                             "change"       : n.updated,

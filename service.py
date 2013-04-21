@@ -33,7 +33,7 @@ def service_web():
 def get_diff(source, target):
     missing_files = []
     for ident, values in source:
-        if ident not in [ x for x, y in target ]:
+        if values['upd_attr'] not in [ y['upd_attr'] for x, y in target ]:
             missing_files.append(( ident, values))
     return missing_files
 
