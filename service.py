@@ -44,10 +44,20 @@ def save_stat_file(data, folder):
     path = "%s/%s/state" % (cfg['global']['base_path'], folder)
     file(path, "w").write(str(data))
 
+def get_update_state(folder):
+    path = "%s/%s/upd_state" % (cfg['global']['base_path'], folder)
+    try:
+        return file(path).read()
+    except:
+        return False
+
+def set_update_state(folder, state):
+    path = "%s/%s/upd_state" % (cfg['global']['base_path'], folder)
+    file(path, "w").write(state)
 
 def service_sync():
     run = True
-    while run == True:
+    while run:
         if len(cfg['sync_pairs']) > 0:
             for job in cfg['sync_pairs']:
                 #Get sync config
@@ -64,13 +74,17 @@ def service_sync():
                     continue
 
                 #Begin Sync
-                source['init_function'](job['name'], job['source'].get('options'), cfg['global'])
+                updState = get_update_state(job['name'])
+                need_sync, updState = source['init_function'](job['name'], job['source'].get('options'), cfg['global'], updState)
+                set_update_state(job['name'], updState)
+
                 target['init_function'](job['name'], job['target'].get('options'), cfg['global'])
-                remote_files = source['list_function']()
-                local_files = target['list_function']("target")
-                missing_files = get_diff(remote_files, local_files)
-                source['pull_function'](missing_files, target['push_function'])
-                save_stat_file(remote_files, job['name'])
+                if need_sync:
+                    remote_files = source['list_function']()
+                    local_files = target['list_function']("target")
+                    missing_files = get_diff(remote_files, local_files)
+                    source['pull_function'](missing_files, target['push_function'])
+                    save_stat_file(remote_files, job['name'])
 
         else:
             if cfg['global']['verbose']:
@@ -80,7 +94,6 @@ def service_sync():
             run = False
             if cfg['global']['verbose']:
                 print "Sync job service finished"
-                print "STR + C to quit"
         else: 
             if cfg['global']['verbose']:
                 print "Starting over after a 10min break"
@@ -94,13 +107,13 @@ def service_sync():
 #Including Website
 execfile('./website/main.py')
 
-webservice = Process(target=service_web)
-webservice.deamon = True
-webservice.start()
-if cfg['global']['verbose']:
-    print "Serverstarted. You can use your browser to configure: http://%s:%s" % \
-                                (cfg['webserver']['ip'], cfg['webserver']['port']) 
-
+#webservice = Process(target=service_web)
+#webservice.deamon = True
+#webservice.start()
+#if cfg['global']['verbose']:
+#    print "Serverstarted. You can use your browser to configure: http://%s:%s" % \
+#                                (cfg['webserver']['ip'], cfg['webserver']['port']) 
+#
 syncservice = Process(target=service_sync)
 syncservice.deamon = True
 syncservice.start()

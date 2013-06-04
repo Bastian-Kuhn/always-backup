@@ -18,7 +18,7 @@ except:
     print "Please install the evernote Python API"
     sys.exit(1)
 
-def main(name, plugin_config, global_config):
+def main(name, plugin_config, global_config, updateState):
     global config_name
     config_name = name
 
@@ -31,20 +31,35 @@ def main(name, plugin_config, global_config):
     if cfg['verbose']:
         print "Init Evernote..."
 
-"""
-Get a list of all all remote notes from evernote
-This function has to be called before any sync, because
-it inits the note_store
-"""
-def get_note_list():
+    #Connect to Evernote
+    global client
     client = EvernoteClient(token=local_cfg['auth_token'], sandbox=local_cfg['sandbox'])
 
     global note_store
     try:
         note_store = client.get_note_store()
-    except:
-        print "Error getting notes from evernote"
+        #Check if we neet to sync
+        sync_state = get_sync_state()
+        if sync_state != updateState:
+            if cfg['verbose']:
+                print "New Data, we have to sync (%s)" % sync_state
+            return True, sync_state
+        return False, sync_state
+    except Exception as e:
+        print "Error getting notes from evernote: %s" % e.message
         return False
+
+def get_sync_state():
+    current_state = note_store.getSyncState()
+    return str(current_state.updateCount)
+
+def debug(data):
+    import inspect
+    print inspect.getmembers(data)
+"""
+Get a list of all all remote notes from evernote
+"""
+def get_note_list():
 
     file_list = [] 
     if cfg['verbose']:
@@ -96,7 +111,7 @@ def get_note_list():
                                            }))
     return file_list 
 
-"""Sync all notes to local"""
+"""Sync notes to local"""
 def pull_notes(filelist, save):
     if cfg['verbose']:
         print "Now Syncing the Notes from Evernote to local"
