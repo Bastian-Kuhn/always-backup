@@ -57,6 +57,8 @@ def service_sync():
     while run:
         if len(cfg['sync_pairs']) > 0:
             for job in cfg['sync_pairs']:
+                if cfg['global']['verbose']:
+                    print "\n#### Working on '%s' ####" % job['name']
                 #Get sync config
                 source_name = job['source']['name']
                 source =  modules.get(source_name)
@@ -77,16 +79,18 @@ def service_sync():
 
                 #Begin Sync
                 updState = get_update_state(job['name'])
-                need_sync, updState = source['init_function'](job['name'], job['source'].get('options'), cfg['global'], updState)
+                need_sync, updState = source['init_function'](job['name'], job['source'].get('options'), cfg['global'], updState, 'source')
                 set_update_state(job['name'], updState)
-
-                target['init_function'](job['name'], job['target'].get('options'), cfg['global'])
+                target['init_function'](job['name'], job['target'].get('options'), cfg['global'], False, 'target')
                 if need_sync:
-                    remote_files = source['list_function']()
-                    local_files = target['list_function']("target")
-                    missing_files = get_diff(remote_files, local_files)
+                    #Get a list of the files we want to sync
+                    source_files = source['list_function']()
+                    missing_files = get_diff(source_files, target['list_function']())
+                    #let source pull function push it to the target push function
                     source['pull_function'](missing_files, target['push_function'])
-                    save_stat_file(remote_files, job['name'])
+                    #Save out stat file that we can compere next time
+                    #Save out stat file that we can compere next time
+                    save_stat_file(source_files, job['name'])
 
         else:
             if cfg['global']['verbose']:

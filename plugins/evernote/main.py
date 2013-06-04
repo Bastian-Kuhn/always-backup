@@ -18,7 +18,7 @@ except:
     print "Please install the evernote Python API"
     sys.exit(1)
 
-def main(name, plugin_config, global_config, updateState):
+def main(name, plugin_config, global_config, updateState, direction):
     global config_name
     config_name = name
 
@@ -27,6 +27,9 @@ def main(name, plugin_config, global_config, updateState):
 
     global cfg
     cfg = global_config
+
+    global job
+    job = direction
 
     if cfg['verbose']:
         print "Init Evernote..."
@@ -39,12 +42,14 @@ def main(name, plugin_config, global_config, updateState):
     try:
         note_store = client.get_note_store()
         #Check if we neet to sync
-        sync_state = get_sync_state()
-        if sync_state != updateState:
-            if cfg['verbose']:
-                print "New Data, we have to sync (%s)" % sync_state
-            return True, sync_state
-        return False, sync_state
+        if job == "source":
+            sync_state = get_sync_state()
+            if sync_state != updateState:
+                if cfg['verbose']:
+                    print "New Data, we have to sync (%s)" % sync_state
+                return True, sync_state
+            return False, sync_state
+
     except Exception as e:
         print "Error getting notes from evernote: %s" % e.message
         return False
@@ -61,55 +66,61 @@ Get a list of all all remote notes from evernote
 """
 def get_note_list():
 
-    file_list = [] 
-    if cfg['verbose']:
-        print "Getting Notebooks with list of notes"
-    for notebook in note_store.listNotebooks():
-        guid = notebook.guid
-        nbname = notebook.name
+    #Evernote is the source for sync
+    if job == 'source':
+        file_list = [] 
         if cfg['verbose']:
-            print " - Found Notebook %s " % nbname
-        filter = NoteStore.NoteFilter()
-        filter.notebookGuid = guid
+            print "Getting Notebooks with list of notes"
+        for notebook in note_store.listNotebooks():
+            guid = notebook.guid
+            nbname = notebook.name
+            if cfg['verbose']:
+                print " - Found Notebook %s " % nbname
+            filter = NoteStore.NoteFilter()
+            filter.notebookGuid = guid
 
-        # get a list of all nodes
-        notes = 1
-        start = 0
-        stop = 50
-        while notes > 0:
-            if cfg['debug']:
-                print " --  %s Notes from %d to %d (Notes %d)" % (nbname, start, stop, notes)
-            noteList = note_store.findNotes(local_cfg['auth_token'], filter, start, stop)
-            start += 51
-            stop += 100
-            notes = len(noteList.notes)
+            # get a list of all nodes
+            notes = 1
+            start = 0
+            stop = 50
+            while notes > 0:
+                if cfg['debug']:
+                    print " --  %s Notes from %d to %d (Notes %d)" % (nbname, start, stop, notes)
+                noteList = note_store.findNotes(local_cfg['auth_token'], filter, start, stop)
+                start += 51
+                stop += 100
+                notes = len(noteList.notes)
 
-            for n in noteList.notes:
-                resource_list = []
-                if n.resources != None:
-                    for res in n.resources:
-                        resource_list.append({
-                             "name"     : res.attributes.fileName,
-                             "type"     : None,
-                             "mime"     : res.mime,
-                             "date"     : None, 
-                             "change"   : None,
-                            })
-                file_list.append((n.guid , {
-                                            "name"         : n.title,
-                                            "upd_attr"     : n.updateSequenceNum,
-                                            "path"         : nbname,
-                                            "date"         : n.created,
-                                            "change"       : n.updated,
-                                            "subparts"     : resource_list,
-                                            "infos"        : {
-                                                "longitude"     : n.attributes.longitude,
-                                                "latitude"      : n.attributes.latitude,
-                                                "lastEditedBy"  : n.attributes.lastEditedBy,
+                for n in noteList.notes:
+                    resource_list = []
+                    if n.resources != None:
+                        for res in n.resources:
+                            resource_list.append({
+                                 "name"     : res.attributes.fileName,
+                                 "type"     : None,
+                                 "mime"     : res.mime,
+                                 "date"     : None, 
+                                 "change"   : None,
+                                })
+                    file_list.append((n.guid , {
+                                                "name"         : n.title,
+                                                "upd_attr"     : n.updateSequenceNum,
+                                                "path"         : nbname,
+                                                "date"         : n.created,
+                                                "change"       : n.updated,
+                                                "subparts"     : resource_list,
+                                                "infos"        : {
+                                                    "longitude"     : n.attributes.longitude,
+                                                    "latitude"      : n.attributes.latitude,
+                                                    "lastEditedBy"  : n.attributes.lastEditedBy,
 
-                                                },
-                                           }))
-    return file_list 
+                                                    },
+                                               }))
+        return file_list 
+
+    #Evernote is the target for sync
+    elif job == 'target':
+        return []
 
 """Sync notes to local"""
 def pull_notes(filelist, save):
