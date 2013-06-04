@@ -32,9 +32,6 @@ def service_web():
 
 def get_diff(source, target):
     missing_files = []
-    if not source or not target:
-        sys.stderr.write("No Data from at least one sync plugin")
-        return []
     for ident, values in source:
         if values['upd_attr'] not in [ y['upd_attr'] for x, y in target ]:
             missing_files.append(( ident, values))
@@ -72,6 +69,11 @@ def service_sync():
                 if target == None:
                     sys.stderr.write("Module: %s not found. Skipping sync configuration" % target_name)
                     continue
+                try:
+                    path = "%s/%s/" % (cfg['global']['base_path'], job['name'])
+                    os.makedirs(path)
+                except os.error:
+                    pass
 
                 #Begin Sync
                 updState = get_update_state(job['name'])
