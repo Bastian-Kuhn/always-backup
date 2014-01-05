@@ -1,12 +1,9 @@
 #!/usr/bin/python
-import glob
-import sys
-import os
-import time
+import glob, sys, os, time, datetime,  signal
 from multiprocessing import Process
-import signal
 
-sys.path.append('./modules')
+#sys.path.append('./modules')
+sys.path.insert(0, './api')
 
 #getting the config
 cfg = eval(file('config').read())
@@ -14,6 +11,7 @@ try:
     cfg = eval(file('local.config').read())
 except:
     pass
+
 
 #Getting all sync plugins
 modules = {}
@@ -26,9 +24,6 @@ for folder in glob.glob("./plugins/*/"):
         if cfg['global']['verbose']:
             print sys.exc_info()
         pass
-
-def service_web():
-    run(host=cfg['webserver']['ip'], port=cfg['webserver']['port'], quiet=True)
 
 def get_diff(source, target):
     missing_files = []
@@ -58,7 +53,7 @@ def service_sync():
         if len(cfg['sync_pairs']) > 0:
             for job in cfg['sync_pairs']:
                 if cfg['global']['verbose']:
-                    print "\n#### Working on '%s' ####" % job['name']
+                    print "\n\033[32m#### Working on '%s' ####\033[0m" % job['name']
                 #Get sync config
                 source_name = job['source']['name']
                 source =  modules.get(source_name)
@@ -79,7 +74,16 @@ def service_sync():
 
                 #Begin Sync
                 updState = get_update_state(job['name'])
-                need_sync, updState = source['init_function'](job['name'], job['source'].get('options'), cfg['global'], updState, 'source')
+                init = source['init_function'](job['name'], 
+                                               job['source'].get('options'), 
+                                               cfg['global'], 
+                                               updState, 
+                                               'source')
+                if init:
+                    need_sync, updState = init
+                else:
+                    continue
+                
                 set_update_state(job['name'], updState)
                 target['init_function'](job['name'], job['target'].get('options'), cfg['global'], False, 'target')
                 if need_sync:
@@ -109,27 +113,19 @@ def service_sync():
                 if cfg['global']['verbose']:
                     print "Have to end the Sync loop... :("
                 return
-            
-#Including Website
-execfile('./website/main.py')
 
-#webservice = Process(target=service_web)
-#webservice.deamon = True
-#webservice.start()
-#if cfg['global']['verbose']:
-#    print "Serverstarted. You can use your browser to configure: http://%s:%s" % \
-#                                (cfg['webserver']['ip'], cfg['webserver']['port']) 
+
+service_sync()
+#syncservice = Process(target=service_sync)
+#syncservice.deamon = True
+#syncservice.start()
 #
-syncservice = Process(target=service_sync)
-syncservice.deamon = True
-syncservice.start()
-
-def quit(signum, frame):
-    if cfg['global']['verbose']:
-        print "\nThanks for using always Backup"
-    try:
-        sys.exit(0)
-    except:
-        pass
-
-signal.signal(signal.SIGINT, quit)
+#def quit(signum, frame):
+#    if cfg['global']['verbose']:
+#        print "\nThanks for using always Backup"
+#    try:
+#        sys.exit(0)
+#    except:
+#        pass
+#
+#signal.signal(signal.SIGINT, quit)

@@ -1,26 +1,48 @@
 #!/usr/bin/python
-import os
-import sys
-import glob
-import shutil
-import datetime
+#   .--import--------------------------------------------------------------.
+#   |                  _                            _                      |
+#   |                 (_)_ __ ___  _ __   ___  _ __| |_                    |
+#   |                 | | '_ ` _ \| '_ \ / _ \| '__| __|                   |
+#   |                 | | | | | | | |_) | (_) | |  | |_                    |
+#   |                 |_|_| |_| |_| .__/ \___/|_|   \__|                   |
+#   |                             |_|                                      |
+#   +----------------------------------------------------------------------+
+#   |                                                                      |
+#   '----------------------------------------------------------------------'
 
-import evernote_tools as et
-
-import hashlib
-import binascii
+import shutil, sys, hashlib, binascii
 try:
     import evernote.edam.userstore.constants as UserStoreConstants
     import evernote.edam.type.ttypes as Types
     from evernote.edam.notestore import NoteStore
     from evernote.api.client import EvernoteClient
 except:
-    print "Please install the evernote Python API"
-    sys.exit(1)
+    print "Error while importing evernote api"
+    raise
 
+def write_msg(typ, msg):
+    msg = msg.strip()
+    if typ == "error":
+        sys.stderr.write("\033[31mERROR:\033[0m\t" + msg )
+    elif typ == "info":
+        print "\033[34mINFO:\033[0m\t", msg
+    else:
+        print "\033[32mNOTICE:\033[0m\t", msg
+
+#.
+#   .--main----------------------------------------------------------------.
+#   |                                       _                              |
+#   |                       _ __ ___   __ _(_)_ __                         |
+#   |                      | '_ ` _ \ / _` | | '_ \                        |
+#   |                      | | | | | | (_| | | | | |                       |
+#   |                      |_| |_| |_|\__,_|_|_| |_|                       |
+#   |                                                                      |
+#   +----------------------------------------------------------------------+
+#   |                                                                      |
+#   '----------------------------------------------------------------------'
 def main(name, plugin_config, global_config, updateState, direction):
-    global config_name
-    config_name = name
+    global pool_name
+    pool_name = name
 
     global local_cfg
     local_cfg = plugin_config
@@ -32,11 +54,13 @@ def main(name, plugin_config, global_config, updateState, direction):
     job = direction
 
     if cfg['verbose']:
-        print "Init Evernote..."
+        write_msg("notice", "Init Evernote")
 
     #Connect to Evernote
     global client
     client = EvernoteClient(token=local_cfg['auth_token'], sandbox=local_cfg['sandbox'])
+    if cfg['verbose']:
+        write_msg("info"," Connected to Evernote.")
 
     global note_store
     try:
@@ -46,12 +70,12 @@ def main(name, plugin_config, global_config, updateState, direction):
             sync_state = get_sync_state()
             if sync_state != updateState:
                 if cfg['verbose']:
-                    print "New Data, we have to sync (%s)" % sync_state
+                    write_msg("info","New Data, we have to sync (%s)" % sync_state)
                 return True, sync_state
             return False, sync_state
 
     except Exception as e:
-        print "Error getting notes from evernote: %s" % e.message
+        write_msg('error', e.message)
         return False
 
 def get_sync_state():
@@ -131,14 +155,14 @@ def pull_notes(filelist, save):
         if cfg['verbose']:
             print " -- %s" % data['name'] 
         note = note_store.getNote(local_cfg['auth_token'], ident, True, True, True, True)
-        nbname = et.clean_filename(data['path'])
-        note_name = et.clean_filename(data['name'])
+        nbname = clean_filename(data['path'])
+        note_name = clean_filename(data['name'])
         save(note_name+"-content.xml", nbname, str(note.content))
         #Saving Attachments
         if note.resources:
             for res in note.resources:
                 if res.attributes.fileName != None:
-                    filename = et.clean_filename(res.attributes.fileName)
+                    filename = clean_filename(res.attributes.fileName)
                     save(filename, "%s/%s-files" % (nbname, note_name), res.data.body) 
         
 
@@ -191,5 +215,29 @@ def pull_notes(filelist, save):
        #             deleted_notes[nb] = deleted_notes[nb] + data
        #     file(backup_path+"/stats", "w").write(str(deleted_notes))       
 
+#.
+#   .--helper--------------------------------------------------------------.
+#   |                    _          _                                      |
+#   |                   | |__   ___| |_ __   ___ _ __                      |
+#   |                   | '_ \ / _ \ | '_ \ / _ \ '__|                     |
+#   |                   | | | |  __/ | |_) |  __/ |                        |
+#   |                   |_| |_|\___|_| .__/ \___|_|                        |
+#   |                                |_|                                   |
+#   +----------------------------------------------------------------------+
+#   |                                                                      |
+#   '----------------------------------------------------------------------'
+def clean_filename(filename):
+    chars = '-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    return ''.join(c for c in filename if c in chars)
 
 
+"""Get the stats file with the list of all local saved evernote files""" 
+def get_local_notes(notebook_path):
+    try:
+        os.makedirs(notebook_path)
+    except os.error:
+        pass
+    if os.path.exists(notebook_path + "/stats"):
+        return eval(file(notebook_path + "/stats").read())
+    return {}
+#.
