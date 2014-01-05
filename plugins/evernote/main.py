@@ -23,7 +23,7 @@ except:
 def write_msg(typ, msg):
     msg = msg.strip()
     if typ == "error":
-        sys.stderr.write("\033[31mERROR:\033[0m\t" + msg )
+        sys.stderr.write("\033[31mERROR:\033[0m\t" + msg + "\n" )
     elif typ == "info":
         print "\033[34mINFO:\033[0m\t", msg
     else:

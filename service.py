@@ -12,6 +12,14 @@ try:
 except:
     pass
 
+def write_msg(typ, msg):
+    msg = msg.strip()
+    if typ == "error":
+        sys.stderr.write("\033[31mERROR:\033[0m\t" + msg + "\n" )
+    elif typ == "info":
+        print "\033[34mINFO:\033[0m\t", msg
+    else:
+        print "\033[32mNOTICE:\033[0m\t", msg
 
 #Getting all sync plugins
 modules = {}
@@ -58,13 +66,13 @@ def service_sync():
                 source_name = job['source']['name']
                 source =  modules.get(source_name)
                 if source == None:
-                    sys.stderr.write("Module: %s not found. Skipping sync configuration" % source_name)
+                    write_msg("error", "Module: %s not found. Skipping sync configuration" % source_name) 
                     continue
 
                 target_name = job['target']['name']
                 target =  modules.get(target_name)
                 if target == None:
-                    sys.stderr.write("Module: %s not found. Skipping sync configuration" % target_name)
+                    write_msg("error", "Module: %s not found. Skipping sync configuration" % target_name) 
                     continue
                 try:
                     path = "%s/%s/" % (cfg['global']['base_path'], job['name'])
@@ -83,8 +91,8 @@ def service_sync():
                     need_sync, updState = init
                 else:
                     continue
-                
-                set_update_state(job['name'], updState)
+                #Save the last sync state 
+                set_update_state(job['name'], str(updState))
                 target['init_function'](job['name'], job['target'].get('options'), cfg['global'], False, 'target')
                 if need_sync:
                     #Get a list of the files we want to sync
@@ -92,26 +100,25 @@ def service_sync():
                     missing_files = get_diff(source_files, target['list_function']())
                     #let source pull function push it to the target push function
                     source['pull_function'](missing_files, target['push_function'])
-                    #Save out stat file that we can compere next time
-                    #Save out stat file that we can compere next time
+                    #Save out stat file that we can compare next time
                     save_stat_file(source_files, job['name'])
 
         else:
             if cfg['global']['verbose']:
-                sys.stderr.write("Sync: Nothing to do. Pleas configure at least a sync pair")
+                write_msg("error", "Sync: Nothing to do. Pleas configure at least a sync pair")
 
         if not cfg['global']['run_as_service']:
             run = False
             if cfg['global']['verbose']:
-                print "Sync job service finished"
+                write_msg('info', "Sync job service finished" )
         else: 
             if cfg['global']['verbose']:
-                print "Starting over after a 10min break"
+                write_msg("notice", "Starting over after a 10min break" )
             try:
                 time.sleep(600)
             except:
                 if cfg['global']['verbose']:
-                    print "Have to end the Sync loop... :("
+                    write_msg("error", "Have to end the Sync loop... :(")
                 return
 
 

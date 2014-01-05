@@ -1,12 +1,23 @@
-{ "global" : {  "verbose" : True,
-                "debug" : False,
-                "run_as_service" : False,
-                "base_path" : "/tmp/backup",
-             },
-  "sync_pairs" : [
-  ],
-  "webserver" : {
-      "ip" : "127.0.0.1",
-      "port" : 9111,
-  },
-}
+{'global': {'base_path': '/home/bk/awbackup',
+            'debug': False,
+            'run_as_service': False,
+            'verbose': True},
+ 'sync_pairs': [
+             {'name': 'Evernote to local',
+                 'source': {'name': 'evernote',
+                            'options': {'auth_token': 'XXXX',
+                                        'debug_dump': False,
+                                        'hmlversion': True,
+                                        'sandbox': True}},
+                 'target': {'name': 'local'}},
+             {'name': 'Dropbox to local',
+                 'source': {'name': 'dropbox',
+                            'options' : {
+                              'auth_token': 'XXXX', 
+                              'app_secret': 'XXXXX', 
+                              'app_key': 'XXXXXX'}},
+                 'target': {'name': 'local'}},
+                 
+                 ],
+ 'webserver': {'ip': '127.0.0.1', 'port': 9111}}
+

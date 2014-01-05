@@ -1,6 +1,15 @@
 #!/usr/bin/python
 import os
 
+def write_msg(typ, msg):
+    msg = msg.strip()
+    if typ == "error":
+        sys.stderr.write("\033[31mERROR:\033[0m\t" + msg + "\n" )
+    elif typ == "info":
+        print "\033[34mINFO:\033[0m\t", msg
+    else:
+        print "\033[32mNOTICE:\033[0m\t", msg
+
 def main(name, plugin_config, global_config, updState, direction):
 
     global job
@@ -16,7 +25,7 @@ def main(name, plugin_config, global_config, updState, direction):
     cfg = global_config
 
     if cfg['verbose']:
-        print "Init Local..."
+        write_msg("notice", "Init local Storage...")
     #Need currently always a sync
     return True, ''
 
