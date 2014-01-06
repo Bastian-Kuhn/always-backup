@@ -11,13 +11,7 @@
 #   '----------------------------------------------------------------------'
 
 
-#import shutil, sys, hashlib, binascii
-try:
-    import dropbox
-except:
-    print "Error while importing api"
-    raise
-
+import sys
 def write_msg(typ, msg):
     msg = msg.strip()
     if typ == "error":
@@ -26,6 +20,12 @@ def write_msg(typ, msg):
         print "\033[34mINFO:\033[0m\t", msg
     else:
         print "\033[32mNOTICE:\033[0m\t", msg
+try:
+    import dropbox
+except:
+    write_msg("error",  "Cannot import api")
+    raise
+
 
 #.
 #   .--main----------------------------------------------------------------.
@@ -54,9 +54,15 @@ def main(name, plugin_config, global_config, updateState, direction):
     global client
     client = dropbox.client.DropboxClient(local_cfg['auth_token'])
 
+    try:
+        account = client.account_info()['display_name']
+    except:
+        write_msg("error", "Exception getting data from Dropbox. (%s)" % local_cfg['auth_token'])
+        raise
+
     if cfg['verbose']:
         write_msg("notice", "Init Dropbox")
-        write_msg("notice", 'Account: %s ' % client.account_info()['display_name'])
+        write_msg("notice", 'Account: %s ' % account )
 
     #Currently we dont know if we have to sync without checking all files.
     #So we return always True:

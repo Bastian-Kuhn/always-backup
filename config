@@ -13,9 +13,7 @@
              {'name': 'Dropbox to local',
                  'source': {'name': 'dropbox',
                             'options' : {
-                              'auth_token': 'XXXX', 
-                              'app_secret': 'XXXXX', 
-                              'app_key': 'XXXXXX'}},
+                              'auth_token': 'XXXX'}},
                  'target': {'name': 'local'}},
                  
                  ],

@@ -3,6 +3,8 @@ Always-Backup
 
 Python backup solution for cloud data
 
+Download, run ./setup.py to configure paths and sync pairs,
+then run service.py to start the backup.
 
 
 Evernote
@@ -10,15 +12,9 @@ Evernote
 You can backup all Notebooks and Notes of an Evernote account
 All you need is a api key from evernote.
 
-The Script will connect to Evernote, load all notebooks and notes,
-checks for new or updated notes, saves it in you local filesystem
-and move deleted mails into a trash folder.
-
 Dropbox
 =======
 It is possbile to Backup all File from a Dropbox account.
-In ./helper you will find a dropbox_auth.py. This programm will return the auth_token you
-need for the sync_pair configuration.
 
 
 About Always Backup
@@ -33,6 +29,5 @@ Dropox to Dropbox...
 
 But, this script is not finished yet.
 Some of the todo's:
- - Configuration interface (cli)
  - Web Interface Access to Evernote Files
  - Trash function for files
