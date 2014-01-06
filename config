@@ -8,7 +8,7 @@
                             'options': {'auth_token': 'XXXX',
                                         'debug_dump': False,
                                         'hmlversion': True,
-                                        'sandbox': True}},
+                                        }},
                  'target': {'name': 'local'}},
              {'name': 'Dropbox to local',
                  'source': {'name': 'dropbox',

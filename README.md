@@ -10,11 +10,13 @@ then run service.py to start the backup.
 Evernote
 ========
 You can backup all Notebooks and Notes of an Evernote account
-All you need is a api key from evernote.
+While the App is reviewed by Evernote only Sandbox sync is possible.
 
 Dropbox
 =======
 It is possbile to Backup all File from a Dropbox account.
+The App is currently reviewed by Dropbox it's currently only 
+usable by myself.
 
 
 About Always Backup

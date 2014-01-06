@@ -58,7 +58,7 @@ def main(name, plugin_config, global_config, updateState, direction):
 
     #Connect to Evernote
     global client
-    client = EvernoteClient(token=local_cfg['auth_token'], sandbox=local_cfg['sandbox'])
+    client = EvernoteClient(token=local_cfg['auth_token'], sandbox=True)
     if cfg['verbose']:
         write_msg("info"," Connected to Evernote.")
 
