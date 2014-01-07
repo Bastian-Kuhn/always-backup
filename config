@@ -2,20 +2,20 @@
             'debug': False,
             'run_as_service': False,
             'verbose': True},
- 'sync_pairs': [
-             {'name': 'Evernote to local',
-                 'source': {'name': 'evernote',
-                            'options': {'auth_token': 'XXXX',
-                                        'debug_dump': False,
-                                        'hmlversion': True,
-                                        }},
-                 'target': {'name': 'local'}},
-             {'name': 'Dropbox to local',
-                 'source': {'name': 'dropbox',
-                            'options' : {
-                              'auth_token': 'XXXX'}},
-                 'target': {'name': 'local'}},
-                 
-                 ],
+# 'sync_pairs': [
+#             {'name': 'Evernote to local',
+#                 'source': {'name': 'evernote',
+#                            'options': {'auth_token': 'XXXX',
+#                                        'debug_dump': False,
+#                                        'hmlversion': True,
+#                                        }},
+#                 'target': {'name': 'local'}},
+#             {'name': 'Dropbox to local',
+#                 'source': {'name': 'dropbox',
+#                            'options' : {
+#                              'auth_token': 'XXXX'}},
+#                 'target': {'name': 'local'}},
+#                 
+#                 ],
  'webserver': {'ip': '127.0.0.1', 'port': 9111}}
 
