@@ -49,18 +49,6 @@ def decode_dropbox_key(key):
 
     return ''.join(result).split('?', 2)
 
-#Source: https://gist.github.com/inkedmn/5041037
-def parse_evernote_query_string(authorize_url):
-    uargs = authorize_url.split('?')
-    vals = {}
-    if len(uargs) == 1:
-        raise Exception('Invalid Authorization URL')
-    for pair in uargs[1].split('&'):
-        key, value = pair.split('=', 1)
-        vals[key] = value
-    return vals
-
-
 #   .--config helper-------------------------------------------------------.
 #   |                      __ _         _          _                       |
 #   |      ___ ___  _ __  / _(_) __ _  | |__   ___| |_ __   ___ _ __       |
@@ -83,17 +71,32 @@ def get_config():
 
 def write_config(cfg):
     file('local.config', 'w').write(pprint.pformat(cfg))
+
+def find_exsisting_token(plugin):
+    cfg = get_config()
+    keys = []
+    found_tokens = []
+    if cfg.get('sync_pairs'):
+        for job in cfg['sync_pairs']:
+            for what in ['source', 'target']:
+                if job[what]['name'] == plugin:
+                    token = job[what]['options']['auth_token']
+                    if token and token not in found_tokens:
+                        found_tokens.append(token)
+                        keys.append((job['name'], token ))
+        return keys
+    return False
 #.
 #   .--general config------------------------------------------------------.
-    #   |                                   _                    __ _          |
-    #   |    __ _  ___ _ __   ___ _ __ __ _| |   ___ ___  _ __  / _(_) __ _    |
-    #   |   / _` |/ _ \ '_ \ / _ \ '__/ _` | |  / __/ _ \| '_ \| |_| |/ _` |   |
-    #   |  | (_| |  __/ | | |  __/ | | (_| | | | (_| (_) | | | |  _| | (_| |   |
-    #   |   \__, |\___|_| |_|\___|_|  \__,_|_|  \___\___/|_| |_|_| |_|\__, |   |
-    #   |   |___/                                                     |___/    |
-    #   +----------------------------------------------------------------------+
-    #   |                                                                      |
-    #   '----------------------------------------------------------------------'
+#   |                                   _                    __ _          |
+#   |    __ _  ___ _ __   ___ _ __ __ _| |   ___ ___  _ __  / _(_) __ _    |
+#   |   / _` |/ _ \ '_ \ / _ \ '__/ _` | |  / __/ _ \| '_ \| |_| |/ _` |   |
+#   |  | (_| |  __/ | | |  __/ | | (_| | | | (_| (_) | | | |  _| | (_| |   |
+#   |   \__, |\___|_| |_|\___|_|  \__,_|_|  \___\___/|_| |_|_| |_|\__, |   |
+#   |   |___/                                                     |___/    |
+#   +----------------------------------------------------------------------+
+#   |                                                                      |
+#   '----------------------------------------------------------------------'
 
 def general_config():
     cfg = get_config()
@@ -147,103 +150,111 @@ def edit_sync_pair(what):
         sync_pairs()
     
     # Select Source
-    code, what = d.menu("From which source do you want to backup the files?",
+    code, which_plugin = d.menu("From which source do you want to backup the files?",
                        choices=[ ('Evernote', 'Get all Notes from Evernote®'),
                                  ('Dropbox', 'Get all Files from Dropbox®'),
                        ])
     if code != 0:
         main_menu()
-#   .--evernote------------------------------------------------------------.
-#   |                                               _                      |
-#   |                _____   _____ _ __ _ __   ___ | |_ ___                |
-#   |               / _ \ \ / / _ \ '__| '_ \ / _ \| __/ _ \               |
-#   |              |  __/\ V /  __/ |  | | | | (_) | ||  __/               |
-#   |               \___| \_/ \___|_|  |_| |_|\___/ \__\___|               |
-#   |                                                                      |
-#   +----------------------------------------------------------------------+
-#   |                                                                      |
-#   '----------------------------------------------------------------------'
+    
+    obj['source']['name'] = which_plugin.lower()
+    tokens = find_exsisting_token(which_plugin.lower())
+    code = 1
+    if tokens:
+        code, what = d.menu("You can use one of the exsisting tokens from the "
+                            "following configurations.\nIf you choice Cancel the "
+                            "Auth process will be started to create a new token.",
+                            choices=tokens
+                            )
+    if code == 0:
+        for name, token in tokens:
+            if name == what:
+                obj['source']['options']['auth_token'] = token
+    else:
+        #   .--evernote------------------------------------------------------------.
+        #   |                                               _                      |
+        #   |                _____   _____ _ __ _ __   ___ | |_ ___                |
+        #   |               / _ \ \ / / _ \ '__| '_ \ / _ \| __/ _ \               |
+        #   |              |  __/\ V /  __/ |  | | | | (_) | ||  __/               |
+        #   |               \___| \_/ \___|_|  |_| |_|\___/ \__\___|               |
+        #   |                                                                      |
+        #   +----------------------------------------------------------------------+
+        #   |                                                                      |
+        #   '----------------------------------------------------------------------'
 
-    if what == 'Evernote':
-        client = EvernoteClient(
-            consumer_key = 'baschtik-3522',
-            consumer_secret = '9851242b79ad58cd',
-            sandbox = True #TODO
-        )
-        request_token = client.get_request_token('http://localhost')
+        if which_plugin == 'Evernote':
+            client = EvernoteClient(
+                consumer_key = 'baschtik-3522',
+                consumer_secret = '9851242b79ad58cd',
+                sandbox = True #TODO
+            )
+            request_token = client.get_request_token('http://always-backup.com/external_auth/evernote/')
 
-        text = '''\
-        1) Go to: \n%s 
-        1a) Make sure that you copyed the complete URL.
-        2) Click "Allow" (you might have to log in first)
-        3) Copy the resulting url (starts with http://localhost) 
-        ''' % client.get_authorize_url(request_token)
+            text = '''\
+            1) Go to: \n%s 
+            1a) Make sure that you have the complete URL (Scroll to te right).
+            2) Click "Allow" (you might have to log in first)
+            3) You will get a Code. Copy it to the Clip-board 
+            ''' % client.get_authorize_url(request_token)
 
-        d.scrollbox( text, height=15, width=200)
-        try:
-            old_token = obj['source']['options']['auth_token']
-        except: 
-            old_token = ""
-        code, authurl = d.inputbox( "Now enter the URL (or don't change the entry if you don't want to relogin.", width=150, init=old_token )
-        if code != 0:
-            sync_pairs()
+            d.scrollbox( text, height=15, width=0)
+            code, verifier = d.inputbox( "Now enter the code here:", width=150 )
+            if code != 0:
+                sync_pairs()
 
-        if old_token != authurl.strip() and code == 0:
-            obj['source']['name'] = "evernote"
 
             try:
-                vals = parse_evernote_query_string(authurl)
                 auth_token = client.get_access_token(
                             request_token['oauth_token'],
                             request_token['oauth_token_secret'],
-                            vals['oauth_verifier']
+                            verifier
                         )
             except:
-                d.msgbox("""There was an error getting the access token\nThe profile will be saved, continue and edit it later. Otherwise sync will not work""", height=10, width=50)
-                auth_token = ""
-
+                d.msgbox("There was an error gernerating the access token\n"
+                         "The profile will be saved, continue and edit it later."
+                         "Otherwise sync will not work""", height=10, width=50)
+                auth_token = False
             obj['source']['options']['auth_token'] = auth_token
 
-#.
-#   .--dropbox-------------------------------------------------------------.
-#   |                    _                 _                               |
-#   |                 __| |_ __ ___  _ __ | |__   _____  __                |
-#   |                / _` | '__/ _ \| '_ \| '_ \ / _ \ \/ /                |
-#   |               | (_| | | | (_) | |_) | |_) | (_) >  <                 |
-#   |                \__,_|_|  \___/| .__/|_.__/ \___/_/\_\                |
-#   |                               |_|                                    |
-#   +----------------------------------------------------------------------+
-#   |                                                                      |
-#   '----------------------------------------------------------------------'
+        #.
+        #   .--dropbox-------------------------------------------------------------.
+        #   |                    _                 _                               |
+        #   |                 __| |_ __ ___  _ __ | |__   _____  __                |
+        #   |                / _` | '__/ _ \| '_ \| '_ \ / _ \ \/ /                |
+        #   |               | (_| | | | (_) | |_) | |_) | (_) >  <                 |
+        #   |                \__,_|_|  \___/| .__/|_.__/ \___/_/\_\                |
+        #   |                               |_|                                    |
+        #   +----------------------------------------------------------------------+
+        #   |                                                                      |
+        #   '----------------------------------------------------------------------'
 
-    elif what == 'Dropbox':
-        # I dont understand the idea to conceal the keys and decode it directly after...
-        # in fact, i think thats stupid but what can i do...
-        app_key, app_secret = decode_dropbox_key("N6bIhPubg6A=|NUYVEbxJTEMZr5hxYsGbhAWuVqEpujqkmuCyv6MJ3A==")
-        flow = dropbox.client.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
-        authorize_url = flow.start()
-        text = '''\
-        1) Go to: \n%s 
-        2) Click "Allow" (you might have to log in first)
-        3) Copy the authorization code. ''' % authorize_url
+        elif which_plugin == 'Dropbox':
+            # I dont understand the idea to conceal the keys and decode it directly after...
+            # in fact, i think thats stupid but what can i do...
+            app_key, app_secret = decode_dropbox_key("N6bIhPubg6A=|NUYVEbxJTEMZr5hxYsGbhAWuVqEpujqkmuCyv6MJ3A==")
+            flow = dropbox.client.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
+            authorize_url = flow.start()
+            text = '''\
+            1) Go to: \n%s 
+            2) Click "Allow" (you might have to log in first)
+            3) Copy the authorization code. ''' % authorize_url
 
-        d.msgbox( text, height=15, width=95)
-        try:
-            old_token = obj['source']['options']['auth_token']
-        except: 
-            old_token = ""
-        code, what = d.inputbox( "Now enter the authorization code here: ", 
-                                 init=old_token )
+            d.msgbox( text, height=15, width=95)
+            code, what = d.inputbox( "Now enter the authorization code here: " )
 
-        if old_token != what.strip() and code == 0:
-            obj['source']['name'] = "dropbox"
-            try:
-                access_token, user_id = flow.finish(what.strip())
-            except:
-                d.msgbox("""There was an error contacting dropbox or you entered an invalid token\nThe profile will be saved, continue and edit it later. Otherwise sync will not work""", height=10, width=50)
-                access_token = ""
+            if code != 0:
+                sync_pairs()
+            else:
+                try:
+                    access_token, user_id = flow.finish(what.strip())
+                except:
+                    d.msgbox("There was an error contacting dropbox or you "
+                             "entered an invalid code\nThe profile will be saved,"
+                             "continue and edit it later. Otherwise sync will not work", 
+                             height=10, width=50)
+                    access_token = False
 
-            obj['source']['options']['auth_token'] = access_token
+                obj['source']['options']['auth_token'] = access_token
 
 #.
     # Currently only local possible
