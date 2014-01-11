@@ -186,16 +186,22 @@ def edit_sync_pair(what):
             client = EvernoteClient(
                 consumer_key = 'baschtik-3522',
                 consumer_secret = '9851242b79ad58cd',
-                sandbox = True #TODO
+                sandbox = True, 
             )
             request_token = client.get_request_token('http://always-backup.com/external_auth/evernote/')
 
-            text = '''\
-            1) Go to: \n%s 
-            1a) Make sure that you have the complete URL (Scroll to te right).
-            2) Click "Allow" (you might have to log in first)
-            3) You will get a Code. Copy it to the Clip-board 
-            ''' % client.get_authorize_url(request_token)
+            try:
+                text = '''\
+                1) Go to: \n%s 
+                1a) Make sure that you have the complete URL (Scroll to te right).
+                2) Click "Allow" (you might have to log in first)
+                3) You will get a Code. Copy it to the Clip-board 
+                ''' % client.get_authorize_url(request_token)
+            except:
+                d.msgbox("Sorry, Evernote reportet an error. "
+                         "I quit the setup and show you the Response from Evernote.")
+                print request_token
+                raise
 
             d.scrollbox( text, height=15, width=0)
             code, verifier = d.inputbox( "Now enter the code here:", width=150 )
