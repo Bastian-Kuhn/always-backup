@@ -79,7 +79,6 @@ def get_file_helper(file_list, folder='/'):
                                                "infos"      : {} } ))
 
 
-
 def get_file_list():
     # dropbox is the source for sync
     file_list = []
@@ -97,8 +96,14 @@ def get_files(filelist, save):
     for ident, data in filelist:
         f, metadata = client.get_file_and_metadata(ident)
         save(data["name"], data['path'], f.read()) 
+        if cfg['verbose']:
+            write_msg("info","Downloaded " + ident)
         
-
+def save_file(filename, path, data):
+    full_path = "/%s/%s/%s" % ( pool_name, path, filename )
+    client.put_file(full_path, data)
+    if cfg['verbose']:
+        write_msg("info","Uploaded " + full_path)
 #.
 #   .--helper--------------------------------------------------------------.
 #   |                    _          _                                      |

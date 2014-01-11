@@ -15,6 +15,7 @@ While the App is reviewed by Evernote only Sandbox sync is possible.
 Dropbox
 =======
 It is possbile to Backup all File from a Dropbox account.
+And from Evernote to the Dropox Account. (Currently only for testing)
 
 
 About Always Backup

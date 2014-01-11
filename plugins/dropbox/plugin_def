@@ -1,6 +1,6 @@
 {"dropbox" : { 
     "init_function" : dropbox.main,
     "pull_function" : dropbox.get_files,
-    "push_function" : None,
+    "push_function" : dropbox.save_file,
     "list_function" : dropbox.get_file_list, 
 }}

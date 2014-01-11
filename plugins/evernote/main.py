@@ -149,11 +149,11 @@ def get_note_list():
 """Sync notes to local"""
 def pull_notes(filelist, save):
     if cfg['verbose']:
-        print "Now Syncing the Notes from Evernote to local"
+        write_msg("info", "Getting the notes from Evernote")
 
     for ident, data in filelist:
         if cfg['verbose']:
-            print " -- %s" % data['name'] 
+            write_msg("info", "Downloaded %s from Evernote" % data['name'])
         note = note_store.getNote(local_cfg['auth_token'], ident, True, True, True, True)
         nbname = clean_filename(data['path'])
         note_name = clean_filename(data['name'])

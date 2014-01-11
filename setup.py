@@ -16,10 +16,6 @@ import locale, dialog
 from dialog import Dialog
 sys.path.insert(0, './api')
 locale.setlocale(locale.LC_ALL, '')
-import dropbox
-import evernote.edam.userstore.constants as UserStoreConstants
-import evernote.edam.type.ttypes as Types
-from evernote.api.client import EvernoteClient
 from base64 import b64encode, b64decode
 
 d = Dialog(dialog="dialog")
@@ -123,6 +119,111 @@ def general_config():
 #   |                                                                      |
 #   '----------------------------------------------------------------------'
 
+def find_exsisting_token_dialog(plugin):
+    tokens = find_exsisting_token(plugin)
+    if tokens:
+        code, what = d.menu("You can use one of the existing tokens from the "
+                            "following configurations.\nIf you choice Cancel the "
+                            "Auth process will be started to create a new token.",
+                            choices=tokens
+                            )
+        for name, token in tokens:
+            if name == what:
+                return token
+    return False
+
+#   .--evernote------------------------------------------------------------.
+#   |                                               _                      |
+#   |                _____   _____ _ __ _ __   ___ | |_ ___                |
+#   |               / _ \ \ / / _ \ '__| '_ \ / _ \| __/ _ \               |
+#   |              |  __/\ V /  __/ |  | | | | (_) | ||  __/               |
+#   |               \___| \_/ \___|_|  |_| |_|\___/ \__\___|               |
+#   |                                                                      |
+#   +----------------------------------------------------------------------+
+#   |                                                                      |
+#   '----------------------------------------------------------------------'
+def auth_evernote():
+    import evernote.edam.userstore.constants as UserStoreConstants
+    import evernote.edam.type.ttypes as Types
+    from evernote.api.client import EvernoteClient
+    client = EvernoteClient(
+        consumer_key = 'baschtik-3522',
+        consumer_secret = '9851242b79ad58cd',
+        sandbox = True, 
+    )
+    request_token = client.get_request_token('http://always-backup.com/external_auth/evernote/')
+
+    try:
+        text = '''\
+        1) Go to: \n%s 
+        1a) Make sure that you have the complete URL (Scroll to te right).
+        2) Click "Allow" (you might have to log in first)
+        3) You will get a Code. Copy it to the Clip-board 
+        ''' % client.get_authorize_url(request_token)
+    except:
+        d.msgbox("Sorry, Evernote reportet an error. "
+                 "I quit the setup and show you the Response from Evernote.")
+        print request_token
+        raise
+
+    d.scrollbox( text, height=15, width=0)
+    code, verifier = d.inputbox( "Now enter the code here:", width=150 )
+    if code != 0:
+        sync_pairs()
+
+    try:
+        auth_token = client.get_access_token(
+                    request_token['oauth_token'],
+                    request_token['oauth_token_secret'],
+                    verifier
+                )
+    except:
+        d.msgbox("There was an error gernerating the access token\n"
+                 "The profile will be saved, continue and edit it later."
+                 "Otherwise sync will not work""", height=10, width=50)
+        auth_token = False
+    return auth_token
+#.
+
+#   .--dropbox-------------------------------------------------------------.
+#   |                    _                 _                               |
+#   |                 __| |_ __ ___  _ __ | |__   _____  __                |
+#   |                / _` | '__/ _ \| '_ \| '_ \ / _ \ \/ /                |
+#   |               | (_| | | | (_) | |_) | |_) | (_) >  <                 |
+#   |                \__,_|_|  \___/| .__/|_.__/ \___/_/\_\                |
+#   |                               |_|                                    |
+#   +----------------------------------------------------------------------+
+#   |                                                                      |
+#   '----------------------------------------------------------------------'
+def auth_dropbox():
+    import dropbox
+    # I dont understand the idea to conceal the keys and decode it directly after...
+    # in fact, i think thats stupid but what can i do...
+    app_key, app_secret = decode_dropbox_key("N6bIhPubg6A=|NUYVEbxJTEMZr5hxYsGbhAWuVqEpujqkmuCyv6MJ3A==")
+    flow = dropbox.client.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
+    authorize_url = flow.start()
+    text = '''\
+    1) Go to: \n%s 
+    2) Click "Allow" (you might have to log in first)
+    3) Copy the authorization code. ''' % authorize_url
+
+    d.msgbox( text, height=15, width=95)
+    code, what = d.inputbox( "Now enter the authorization code here: " )
+
+    if code != 0:
+        sync_pairs()
+    else:
+        try:
+            access_token, user_id = flow.finish(what.strip())
+        except:
+            d.msgbox("There was an error contacting dropbox or you "
+                     "entered an invalid code\nThe profile will be saved,"
+                     "continue and edit it later. Otherwise sync will not work", 
+                     height=10, width=50)
+            access_token = False
+    return access_token
+#.
+
 def edit_sync_pair(what):
     #if int we edit, string its a new one
     cfg = get_config()
@@ -158,114 +259,37 @@ def edit_sync_pair(what):
         main_menu()
     
     obj['source']['name'] = which_plugin.lower()
-    tokens = find_exsisting_token(which_plugin.lower())
-    code = 1
-    if tokens:
-        code, what = d.menu("You can use one of the exsisting tokens from the "
-                            "following configurations.\nIf you choice Cancel the "
-                            "Auth process will be started to create a new token.",
-                            choices=tokens
-                            )
-    if code == 0:
-        for name, token in tokens:
-            if name == what:
-                obj['source']['options']['auth_token'] = token
+    token = find_exsisting_token_dialog(which_plugin.lower())
+    if token:
+         obj['source']['options']['auth_token'] = token
     else:
-        #   .--evernote------------------------------------------------------------.
-        #   |                                               _                      |
-        #   |                _____   _____ _ __ _ __   ___ | |_ ___                |
-        #   |               / _ \ \ / / _ \ '__| '_ \ / _ \| __/ _ \               |
-        #   |              |  __/\ V /  __/ |  | | | | (_) | ||  __/               |
-        #   |               \___| \_/ \___|_|  |_| |_|\___/ \__\___|               |
-        #   |                                                                      |
-        #   +----------------------------------------------------------------------+
-        #   |                                                                      |
-        #   '----------------------------------------------------------------------'
-
         if which_plugin == 'Evernote':
-            client = EvernoteClient(
-                consumer_key = 'baschtik-3522',
-                consumer_secret = '9851242b79ad58cd',
-                sandbox = True, 
-            )
-            request_token = client.get_request_token('http://always-backup.com/external_auth/evernote/')
-
-            try:
-                text = '''\
-                1) Go to: \n%s 
-                1a) Make sure that you have the complete URL (Scroll to te right).
-                2) Click "Allow" (you might have to log in first)
-                3) You will get a Code. Copy it to the Clip-board 
-                ''' % client.get_authorize_url(request_token)
-            except:
-                d.msgbox("Sorry, Evernote reportet an error. "
-                         "I quit the setup and show you the Response from Evernote.")
-                print request_token
-                raise
-
-            d.scrollbox( text, height=15, width=0)
-            code, verifier = d.inputbox( "Now enter the code here:", width=150 )
-            if code != 0:
-                sync_pairs()
-
-
-            try:
-                auth_token = client.get_access_token(
-                            request_token['oauth_token'],
-                            request_token['oauth_token_secret'],
-                            verifier
-                        )
-            except:
-                d.msgbox("There was an error gernerating the access token\n"
-                         "The profile will be saved, continue and edit it later."
-                         "Otherwise sync will not work""", height=10, width=50)
-                auth_token = False
-            obj['source']['options']['auth_token'] = auth_token
-
-        #.
-        #   .--dropbox-------------------------------------------------------------.
-        #   |                    _                 _                               |
-        #   |                 __| |_ __ ___  _ __ | |__   _____  __                |
-        #   |                / _` | '__/ _ \| '_ \| '_ \ / _ \ \/ /                |
-        #   |               | (_| | | | (_) | |_) | |_) | (_) >  <                 |
-        #   |                \__,_|_|  \___/| .__/|_.__/ \___/_/\_\                |
-        #   |                               |_|                                    |
-        #   +----------------------------------------------------------------------+
-        #   |                                                                      |
-        #   '----------------------------------------------------------------------'
+            obj['source']['options']['auth_token'] = auth_evernote()
 
         elif which_plugin == 'Dropbox':
-            # I dont understand the idea to conceal the keys and decode it directly after...
-            # in fact, i think thats stupid but what can i do...
-            app_key, app_secret = decode_dropbox_key("N6bIhPubg6A=|NUYVEbxJTEMZr5hxYsGbhAWuVqEpujqkmuCyv6MJ3A==")
-            flow = dropbox.client.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
-            authorize_url = flow.start()
-            text = '''\
-            1) Go to: \n%s 
-            2) Click "Allow" (you might have to log in first)
-            3) Copy the authorization code. ''' % authorize_url
+            obj['source']['options']['auth_token'] = auth_dropbox()
 
-            d.msgbox( text, height=15, width=95)
-            code, what = d.inputbox( "Now enter the authorization code here: " )
-
-            if code != 0:
-                sync_pairs()
-            else:
-                try:
-                    access_token, user_id = flow.finish(what.strip())
-                except:
-                    d.msgbox("There was an error contacting dropbox or you "
-                             "entered an invalid code\nThe profile will be saved,"
-                             "continue and edit it later. Otherwise sync will not work", 
-                             height=10, width=50)
-                    access_token = False
-
-                obj['source']['options']['auth_token'] = access_token
-
-#.
     # Currently only local possible
-    obj['target']['name'] = "local"
-     
+    # Select Target
+    code, which_plugin = d.menu("To which target do you want to backup the files?",
+                       choices=[ ('Local', 'Save the files to your Hardisk'),
+                                 ('Dropbox', 'Put the files to Dropbox®'),
+                       ])
+    if code != 0:
+        main_menu()
+    
+    obj['target']['name'] = which_plugin.lower()
+    if which_plugin in [ "Dropbox" ]:
+        token = find_exsisting_token_dialog(which_plugin.lower())
+        if token:
+             obj['target']['options']['auth_token'] = token
+        else:
+            if which_plugin == 'Evernote':
+                obj['target']['options']['auth_token'] = auth_evernote()
+
+            elif which_plugin == 'Dropbox':
+                obj['target']['options']['auth_token'] = auth_dropbox()
+         
     pairs.append(obj)
     cfg['sync_pairs'] = pairs
     write_config(cfg)
