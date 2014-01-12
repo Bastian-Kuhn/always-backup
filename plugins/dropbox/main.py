@@ -38,6 +38,7 @@ except:
 #   +----------------------------------------------------------------------+
 #   |                                                                      |
 #   '----------------------------------------------------------------------'
+
 def main(name, plugin_config, global_config, updateState, direction):
     global pool_name
     pool_name = name
@@ -50,7 +51,7 @@ def main(name, plugin_config, global_config, updateState, direction):
 
     global job
     job = direction
-    
+
     global client
     client = dropbox.client.DropboxClient(local_cfg['auth_token'])
 
@@ -68,42 +69,40 @@ def main(name, plugin_config, global_config, updateState, direction):
     #So we return always True:
     return True, True
 
+
+# Litte helper to be able to search the nested folders
 def get_file_helper(file_list, folder='/'):
+    files = list(file_list)
     for entry in list( client.metadata(folder)['contents'] ):
         if entry['is_dir']:
-            get_file_helper(file_list, entry['path'])
+            files = get_file_helper(files, entry['path'])
         else:
-            file_list.append((entry['path'], { "name"       : entry['path'].split('/')[-1],
-                                               "upd_attr"   : entry['rev'],
-                                               "path"       : entry['path'].rsplit('/', 1)[0],
-                                               "infos"      : {} } ))
+            files.append((entry['path'], { "name"       : entry['path'].split('/')[-1],
+                                           "upd_attr"   : entry['revision'],
+                                           "path"       : entry['path'].rsplit('/', 1)[0],
+                                           "infos"      : {} } ))
+    return files
 
-
+# Get list of files 
 def get_file_list():
-    # dropbox is the source for sync
-    file_list = []
-    if job == 'source':
-        get_file_helper(file_list)
-        return file_list
-    #dropbox is the target for sync
-    elif job == 'target':
-        return []
+    print client.account_info()['display_name']
+    return get_file_helper([])
 
 def get_files(filelist, save):
     if cfg['verbose']:
         write_msg("notice", "Now Syncing the Files")
 
     for ident, data in filelist:
+        if cfg['verbose']:
+            write_msg("info","Downloading: " + ident)
         f, metadata = client.get_file_and_metadata(ident)
         save(data["name"], data['path'], f.read()) 
-        if cfg['verbose']:
-            write_msg("info","Downloaded " + ident)
         
 def save_file(filename, path, data):
     full_path = "/%s/%s/%s" % ( pool_name, path, filename )
-    client.put_file(full_path, data)
     if cfg['verbose']:
-        write_msg("info","Uploaded " + full_path)
+        write_msg("info","Uploading: " + full_path)
+    client.put_file(full_path, data, overwrite=True)
 #.
 #   .--helper--------------------------------------------------------------.
 #   |                    _          _                                      |

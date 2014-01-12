@@ -1,6 +1,6 @@
 #!/usr/bin/python
-import glob, sys, os, time, datetime,  signal
-from multiprocessing import Process
+import glob, sys, os, time, datetime,  signal, pprint
+#from multiprocessing import Process
 
 #sys.path.append('./modules')
 sys.path.insert(0, './api')
@@ -43,6 +43,13 @@ def get_diff(source, target):
 def save_stat_file(data, folder):
     path = "%s/%s/state" % (cfg['global']['base_path'], folder)
     file(path, "w").write(str(data))
+
+def get_stat_file(folder):
+    path = "%s/%s/state" % (cfg['global']['base_path'], folder)
+    try:
+        return eval(file(path).read())
+    except:
+        return []
 
 def get_update_state(folder):
     path = "%s/%s/upd_state" % (cfg['global']['base_path'], folder)
@@ -97,7 +104,7 @@ def service_sync():
                 if need_sync:
                     #Get a list of the files we want to sync
                     source_files = source['list_function']()
-                    missing_files = get_diff(source_files, target['list_function']())
+                    missing_files = get_diff(source_files, get_stat_file(job['name']))
                     #let source pull function push it to the target push function
                     source['pull_function'](missing_files, target['push_function'])
                     #Save out stat file that we can compare next time

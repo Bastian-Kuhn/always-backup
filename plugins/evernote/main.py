@@ -82,9 +82,6 @@ def get_sync_state():
     current_state = note_store.getSyncState()
     return str(current_state.updateCount)
 
-def debug(data):
-    import inspect
-    print inspect.getmembers(data)
 """
 Get a list of all all remote notes from evernote
 """
@@ -109,7 +106,7 @@ def get_note_list():
             stop = 50
             while notes > 0:
                 if cfg['debug']:
-                    print " --  %s Notes from %d to %d (Notes %d)" % (nbname, start, stop, notes)
+                    write_msg("debug", "%s Notes from %d to %d (Notes %d)" % (nbname, start, stop, notes))
                 noteList = note_store.findNotes(local_cfg['auth_token'], filter, start, stop)
                 start += 51
                 stop += 100
