@@ -1,6 +1,0 @@
-{"evernote" : { 
-    "init_function" : evernote.main,
-    "pull_function" : evernote.pull_notes,
-    "push_function" : None,
-    "list_function" : evernote.get_note_list, 
-}}

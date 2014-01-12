@@ -1,7 +1,0 @@
-{"local" : { 
-    "init_function" : local.main,
-    "pull_function" : local.get_files,
-    "push_function" : local.save_file,
-    "list_function" : local.list_files, 
-    
-    }}
