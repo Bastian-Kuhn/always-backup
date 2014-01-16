@@ -78,6 +78,10 @@ def service_sync():
     while run:
         if len(cfg['sync_pairs']) > 0:
             for job in cfg['sync_pairs']:
+                if job.get('disabled'):
+                    if cfg['global']['debug']:
+                        write_msg("debug", "Pair %s is disabled in config" % job['name'] )
+                    continue
                 if cfg['global']['verbose']:
                     print "\n\033[32m#### Working on '%s' ####\033[0m" % job['name']
                 #Get sync config
