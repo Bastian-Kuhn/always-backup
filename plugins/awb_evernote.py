@@ -91,9 +91,9 @@ class awb_evernote(awb_plugin.awb_plugin):
         for notebook in self.note_store.listNotebooks():
             guid = notebook.guid
             nbname = notebook.name
-            if cfg['verbose']:
+            if self.cfg['verbose']:
                 write_msg("info", "- Found Notebook %s " % nbname)
-            filter = self.NoteStore.NoteFilter()
+            filter = NoteStore.NoteFilter()
             filter.notebookGuid = guid
 
             # get a list of all nodes
@@ -150,7 +150,7 @@ class awb_evernote(awb_plugin.awb_plugin):
             write_msg("info", "Getting the notes from Evernote")
 
         for ident, data in filelist:
-            if selfcfg['verbose']:
+            if self.cfg['verbose']:
                 write_msg("info", "Downloaded %s from Evernote" % data['name'])
             note = self.note_store.getNote(self.local_cfg['auth_token'], ident, True, True, True, True)
             nbname = clean_filename(data['path'])
