@@ -11,7 +11,8 @@
 #   '----------------------------------------------------------------------'
 import awb_plugin
 from awb_functions import *
-import shutil, sys, hashlib, binascii
+from BeautifulSoup import  BeautifulSoup
+import shutil, sys, hashlib, binascii, re
 try:
     import evernote.edam.userstore.constants as UserStoreConstants
     import evernote.edam.type.ttypes as Types
@@ -135,6 +136,61 @@ class awb_evernote(awb_plugin.awb_plugin):
                                                }))
         return file_list 
     #.
+
+    def get_resource_objid(self, content):
+        bs = BeautifulSoup(str(content))
+        return bs.find('recoindex')['objid']
+
+
+    def format_attachments(self, note, note_name):
+        if not note.resources:
+            return ""
+        count = 0
+        links = 'Attachments:<ul class="attachments">'
+        for res in note.resources:
+            if res.attributes.fileName != None:
+                filename = clean_filename(res.attributes.fileName)
+                try:
+                    link = self.get_resource_objid(res.recognition.body)
+                except:
+                    link = filename
+                count += 1
+                links += u'<a href="./%s-files/%s">%s</a>' % \
+                (note_name, link, filename)
+        links += "</ul> (%s) " % count
+        if count > 0:
+            return links
+        return ""
+
+
+
+    def format_content(self, note):
+        bs = BeautifulSoup(note.content)
+        note_name = clean_filename(note.title)
+        content = str(bs.find("en-note"))
+        content = re.sub(r'<en-media.*?hash="(.*)".*?</en-media>', 
+                         r'<img src="%s-files/\1">' % note_name, 
+                         content )
+        html = '''<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+               "http://www.w3.org/TR/html4/loose.dtd">
+               <html>
+            <head>
+            <title>%s</title>
+            <META HTTP-EQUIV="content-type" CONTENT="text/html; charset=utf-8">
+            </head>
+            <body>
+               %s
+              <br>
+                %s
+            </body>
+            </html>''' % (
+                note_name,
+                content,
+                self.format_attachments(note, note_name)
+
+            )
+        return html
+    #.
     #   .--get data------------------------------------------------------------.
     #   |                           _         _       _                        |
     #   |                 __ _  ___| |_    __| | __ _| |_ __ _                 |
@@ -155,13 +211,20 @@ class awb_evernote(awb_plugin.awb_plugin):
             note = self.note_store.getNote(self.local_cfg['auth_token'], ident, True, True, True, True)
             nbname = clean_filename(data['path'])
             note_name = clean_filename(data['name'])
-            save(note_name+"-content.xml", nbname, str(note.content))
+            save(note_name+".html", nbname, self.format_content(note))
+            if self.cfg['debug']:
+                save(note_name+".debug", nbname, str(note))
             #Saving Attachments
             if note.resources:
                 for res in note.resources:
-                    if res.attributes.fileName != None:
-                        filename = clean_filename(res.attributes.fileName)
-                        save(filename, "%s/%s-files" % (nbname, note_name), res.data.body) 
+                    if not res.recognition and not res.attributes.fileName:
+                        continue
+                    else:
+                        try:
+                            filename = self.get_resource_objid(res.recognition.body)
+                        except:
+                            filename = clean_filename(res.attributes.fileName)
+                    save(filename, "%s/%s-files" % (nbname, note_name), res.data.body) 
     #.
     #   .--trash---------------------------------------------------------------.
     #   |                       _                 _                            |
