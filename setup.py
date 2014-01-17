@@ -143,8 +143,8 @@ def find_exsisting_token_dialog(plugin):
 #   |                                                                      |
 #   '----------------------------------------------------------------------'
 def auth_evernote():
-    import evernote.edam.userstore.constants as UserStoreConstants
-    import evernote.edam.type.ttypes as Types
+    #import evernote.edam.userstore.constants as UserStoreConstants
+    #import evernote.edam.type.ttypes as Types
     from evernote.api.client import EvernoteClient
     client = EvernoteClient(
         consumer_key = 'baschtik-3522',
