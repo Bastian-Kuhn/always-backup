@@ -61,9 +61,6 @@ class awb_evernote(awb_plugin.awb_plugin):
     #   |                                                                      |
     #   '----------------------------------------------------------------------'
     def get_sync_state(self):
-        if self.cfg['debug']:
-            write_msg("debug", "We are in DEBUG Mode, so the system thinks it had so sync everytime")
-            return True, 0
         try:
             #Check if we neet to sync
             if self.job == "source":
