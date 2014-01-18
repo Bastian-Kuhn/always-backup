@@ -158,8 +158,8 @@ class awb_evernote(awb_plugin.awb_plugin):
                         try:
                             data[what] = attr.split('"')[1]
                         except:
-                            print attr
-                            raise
+                            if self.cfg['debug']:
+                                write_msg("debug", "Error extractring: %s from %s" % ( what, str(attr)))
             # now we can start to replace the tag
             image_types = ['image/png', 'image/jpg', 'image/jpeg', 'image/jpg']
             if resources.get(data['hash']):
@@ -217,15 +217,10 @@ class awb_evernote(awb_plugin.awb_plugin):
             found_resources = {}
             if note.resources:
                 for res in note.resources:
-                    if not res.recognition and not res.attributes.fileName:
-                        if self.cfg['debug']:
-                            write_msg("debug",  "There is an note resource without any data we can use")
-                        continue
+                    if res.attributes.fileName:
+                        filename = clean_filename(res.attributes.fileName)
                     else:
-                        if res.attributes.fileName:
-                            filename = clean_filename(res.attributes.fileName)
-                        else:
-                            filename = False
+                        filename = False
 
                     objid = ''.join( [ "%02x" % ord( x ) for x in res.data.bodyHash ] ).strip()
 
