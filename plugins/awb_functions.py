@@ -5,6 +5,8 @@ def write_msg(typ, msg):
         sys.stderr.write("\033[31mERROR:\033[0m\t" + msg + "\n" )
     elif typ == "info":
         print "\033[34mINFO:\033[0m\t", msg
+    elif typ == "debug":
+        print "\033[34mDEBUG: %s\033[0m\t" % msg
     else:
         print "\033[32mNOTICE:\033[0m\t", msg
 

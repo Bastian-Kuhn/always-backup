@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
 #   .--import--------------------------------------------------------------.
 #   |                  _                            _                      |
 #   |                 (_)_ __ ___  _ __   ___  _ __| |_                    |
@@ -11,7 +12,7 @@
 #   '----------------------------------------------------------------------'
 import awb_plugin
 from awb_functions import *
-from BeautifulSoup import  BeautifulSoup
+#from BeautifulSoup import  BeautifulSoup
 import shutil, sys, hashlib, binascii, re
 try:
     import evernote.edam.userstore.constants as UserStoreConstants
@@ -61,6 +62,9 @@ class awb_evernote(awb_plugin.awb_plugin):
     #   |                                                                      |
     #   '----------------------------------------------------------------------'
     def get_sync_state(self):
+        if self.cfg['debug']:
+            write_msg("debug", "We are in DEBUG Mode, so the system thinks it had so sync everytime")
+            return True, 0
         try:
             #Check if we neet to sync
             if self.job == "source":
@@ -120,6 +124,7 @@ class awb_evernote(awb_plugin.awb_plugin):
                                  "date"     : None, 
                                  "change"   : None,
                                 })
+                    #TODO this list is normaly not longer needed
                     file_list.append((n.guid , {
                                                 "name"         : n.title,
                                                 "upd_attr"     : n.updateSequenceNum,
@@ -137,40 +142,47 @@ class awb_evernote(awb_plugin.awb_plugin):
         return file_list 
     #.
 
-    def get_resource_objid(self, content):
-        bs = BeautifulSoup(str(content))
-        return bs.find('recoindex')['objid']
+    #def get_resource_objid(self, content):
+    #    bs = BeautifulSoup(str(content))
+    #    return bs.find('recoindex')['objid']
 
 
-    def format_attachments(self, note, note_name):
-        if not note.resources:
-            return ""
-        count = 0
-        links = 'Attachments:<ul class="attachments">'
-        for res in note.resources:
-            if res.attributes.fileName != None:
-                filename = clean_filename(res.attributes.fileName)
-                try:
-                    link = self.get_resource_objid(res.recognition.body)
-                except:
-                    link = filename
-                count += 1
-                links += u'<a href="./%s-files/%s">%s</a>' % \
-                (note_name, link, filename)
-        links += "</ul> (%s) " % count
-        if count > 0:
-            return links
-        return ""
+    def format_content(self, note, note_name, resources):
+        content = str(note.content)
+        content = content.replace('</en-media>', "")
+        objects = [ 'hash', 'style', 'alt', 'type' ]
+
+        # find all media tags
+        for tag in re.findall(r"(<en-media .*?>)", content):
+            data = {}
+            # simple way to get all attributes
+            for attr in tag.replace("'",'"').split():
+                # check if there is a attribute we searching for
+                for what in objects:
+                    if attr.startswith(what):
+                        # if so, add it to the collection
+                        try:
+                            data[what] = attr.split('"')[1]
+                        except:
+                            print attr
+                            raise
+            # now we can start to replace the tag
+            image_types = ['image/png', 'image/jpg', 'image/jpeg', 'image/jpg']
+            if resources.get(data['hash']):
+                path_to_file = "./" + "/".join(resources[data['hash']])
+                filename = resources[data['hash']][1]
+                if data.get('type') in image_types:
+                    attrs = " ".join( [ '%s="%s"' % ( x, y ) for x, y in data.items() ])
+                    content = content.replace(tag, '<img %s src="%s">' % (attrs, path_to_file ) )
+                else:
+                    content = content.replace(tag, '<a href="%s">%s</a><br>' % (path_to_file, filename ))
+            else:
+                if self.cfg['debug']:
+                    write_msg("debug", "Cannot find resource %s" % str(data))
 
 
 
-    def format_content(self, note):
-        bs = BeautifulSoup(note.content)
-        note_name = clean_filename(note.title)
-        content = str(bs.find("en-note"))
-        content = re.sub(r'<en-media.*?hash="(.*)".*?</en-media>', 
-                         r'<img src="%s-files/\1">' % note_name, 
-                         content )
+
         html = '''<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
                "http://www.w3.org/TR/html4/loose.dtd">
                <html>
@@ -180,14 +192,10 @@ class awb_evernote(awb_plugin.awb_plugin):
             </head>
             <body>
                %s
-              <br>
-                %s
             </body>
             </html>''' % (
                 note_name,
                 content,
-                self.format_attachments(note, note_name)
-
             )
         return html
     #.
@@ -207,24 +215,39 @@ class awb_evernote(awb_plugin.awb_plugin):
 
         for ident, data in filelist:
             if self.cfg['verbose']:
-                write_msg("info", "Downloaded %s from Evernote" % data['name'])
+                write_msg("info", "Download %s from Evernote:" % data['name'])
             note = self.note_store.getNote(self.local_cfg['auth_token'], ident, True, True, True, True)
             nbname = clean_filename(data['path'])
             note_name = clean_filename(data['name'])
-            save(note_name+".html", nbname, self.format_content(note))
-            if self.cfg['debug']:
-                save(note_name+".debug", nbname, str(note))
-            #Saving Attachments
+            # First: Saving Attachments
+            found_resources = {}
             if note.resources:
                 for res in note.resources:
                     if not res.recognition and not res.attributes.fileName:
+                        if self.cfg['debug']:
+                            write_msg("debug",  "There is an note resource without any data we can use")
                         continue
                     else:
-                        try:
-                            filename = self.get_resource_objid(res.recognition.body)
-                        except:
+                        if res.attributes.fileName:
                             filename = clean_filename(res.attributes.fileName)
-                    save(filename, "%s/%s-files" % (nbname, note_name), res.data.body) 
+                        else:
+                            filename = False
+
+                    objid = ''.join( [ "%02x" % ord( x ) for x in res.data.bodyHash ] ).strip()
+
+                    if not filename:
+                        filename = objid
+
+                    folder = note_name + "-files" 
+                    found_resources[objid] = ( folder, filename )
+                    save(filename, "%s/%s" % (nbname, folder) , res.data.body) 
+
+            # And now save the note itself.
+            save(note_name+".html", nbname, self.format_content(note, note_name, found_resources ))
+            if self.cfg['debug']:
+                save(note_name+".debug", nbname, str(note))
+            if self.cfg['verbose']:
+                write_msg("info", "Download finished.\n")
     #.
     #   .--trash---------------------------------------------------------------.
     #   |                       _                 _                            |
