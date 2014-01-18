@@ -12,7 +12,6 @@
 #   '----------------------------------------------------------------------'
 import awb_plugin
 from awb_functions import *
-#from BeautifulSoup import  BeautifulSoup
 import shutil, sys, hashlib, binascii, re
 try:
     import evernote.edam.userstore.constants as UserStoreConstants
@@ -141,11 +140,6 @@ class awb_evernote(awb_plugin.awb_plugin):
                                                }))
         return file_list 
     #.
-
-    #def get_resource_objid(self, content):
-    #    bs = BeautifulSoup(str(content))
-    #    return bs.find('recoindex')['objid']
-
 
     def format_content(self, note, note_name, resources):
         content = str(note.content)
