@@ -1,3 +1,4 @@
+import sys
 
 def write_msg(typ, msg):
     msg = msg.strip()

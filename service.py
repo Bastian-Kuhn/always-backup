@@ -1,21 +1,31 @@
 #!/usr/bin/python
-import glob, sys, os, time, datetime,  signal, pprint
-#from multiprocessing import Process
+import sys, os 
 
-#sys.path.append('./modules')
 sys.path.insert(0, './api')
 sys.path.insert(1, './plugins')
+config_dir = os.path.expanduser('~') + "/.always-backup/"
+
+#Create config dir
+try:
+    os.makedirs(config_dir)
+except:
+    pass
 
 #getting the config
 cfg = eval(file('config').read())
 try:
-    cfg = eval(file('local.config').read())
+    cfg = eval(file( config_dir + 'local.config' ).read())
 except:
     pass
+
 from awb_functions import *
 from awb_evernote import awb_evernote
 from awb_dropbox import awb_dropbox
 from awb_local import awb_local
+
+if not cfg.get('sync_pairs'):
+    write_msg("error", "You have to configure me first. Please run ./setup.py")
+    sys.exit()
 
 plugins = {
  "evernote" : awb_evernote,
@@ -41,25 +51,25 @@ def get_diff(source, target):
     return missing_files
 
 def save_stat_file(data, folder):
-    path = "%s/%s/state" % (cfg['global']['base_path'], folder)
+    path = config_dir + folder + "-state" 
     file(path, "w").write(str(data))
 
 def get_stat_file(folder):
-    path = "%s/%s/state" % (cfg['global']['base_path'], folder)
+    path = config_dir + folder + "-state" 
     try:
         return eval(file(path).read())
     except:
         return []
 
 def get_update_state(folder):
-    path = "%s/%s/upd_state" % (cfg['global']['base_path'], folder)
+    path = config_dir + folder + "-upd_state" 
     try:
         return file(path).read()
     except:
         return False
 
 def set_update_state(folder, state):
-    path = "%s/%s/upd_state" % (cfg['global']['base_path'], folder)
+    path = config_dir + folder + "-upd_state" 
     file(path, "w").write(state)
 
 #.

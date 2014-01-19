@@ -11,12 +11,13 @@
 #   |                                                                      |
 #   '----------------------------------------------------------------------'
 
-import sys, pprint
-import locale, dialog
+import os, sys, pprint, locale, dialog
 from dialog import Dialog
 sys.path.insert(0, './api')
 locale.setlocale(locale.LC_ALL, '')
 from base64 import b64encode, b64decode
+
+config_dir = os.path.expanduser('~') + "/.always-backup/"
 
 d = Dialog(dialog="dialog")
 d.add_persistent_args(["--backtitle", "Always Backup Configuration"])
@@ -60,13 +61,18 @@ def get_config():
     #getting the config
     cfg = eval(file('config').read())
     try:
-        cfg = eval(file('local.config').read())
+        cfg = eval(file(config_dir + 'local.config').read())
     except:
         pass
     return cfg
 
 def write_config(cfg):
-    file('local.config', 'w').write(pprint.pformat(cfg))
+    #Create config dir
+    try:
+        os.makedirs(config_dir)
+    except:
+        pass
+    file(config_dir + 'local.config', 'w').write(pprint.pformat(cfg))
 
 def find_exsisting_token(plugin):
     cfg = get_config()
