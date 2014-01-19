@@ -36,8 +36,7 @@ class awb_dropbox(awb_plugin.awb_plugin):
             raise
 
         if self.cfg['verbose']:
-            write_msg("notice", "Init Dropbox")
-            write_msg("notice", 'Using Account: %s ' % account )
+            write_msg("notice", "Init Dropbox with Acoount %s " % account)
     #.
     #   .--get data list-------------------------------------------------------.
     #   |                    _         _       _          _ _     _            |

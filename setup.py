@@ -255,22 +255,39 @@ def edit_sync_pair(what):
     
     # Select Source
     code, which_plugin = d.menu("From which source do you want to backup the files?",
-                       choices=[ ('Evernote', 'Get all Notes from Evernote®'),
+                       choices=[ ('Local',  "Get all Files from a location on your Harddisk" ),
+                                 ('Evernote', 'Get all Notes from Evernote®'),
                                  ('Dropbox', 'Get all Files from Dropbox®'),
                        ])
     if code != 0:
         main_menu()
     
     obj['source']['name'] = which_plugin.lower()
-    token = find_exsisting_token_dialog(which_plugin.lower())
-    if token:
-         obj['source']['options']['auth_token'] = token
-    else:
-        if which_plugin == 'Evernote':
-            obj['source']['options']['auth_token'] = auth_evernote()
+    # Is the Source auth token based?
+    if which_plugin in [ "Dropbox", "Evernote" ]:
+        token = find_exsisting_token_dialog(which_plugin.lower())
+        if token:
+             obj['source']['options']['auth_token'] = token
+        else:
+            if which_plugin == 'Evernote':
+                obj['source']['options']['auth_token'] = auth_evernote()
 
-        elif which_plugin == 'Dropbox':
-            obj['source']['options']['auth_token'] = auth_dropbox()
+            elif which_plugin == 'Dropbox':
+                obj['source']['options']['auth_token'] = auth_dropbox()
+    # The Target is not auth token based
+    else:
+        if which_plugin == 'Local':
+            # Sadly dselect is not supported in python 2
+            code, what = d.inputbox("From where do you want to get the data?",
+                            init= obj['source']['options'].get('storage_path', ""))
+            if code != 0:
+                main_menu()
+            obj['source']['options']['storage_path'] = what
+            code, what = d.inputbox("RegEx Pattern for file matching (leave empty for None)",
+                            init= obj['source']['options'].get('regex_match', ""))
+            if code != 0:
+                main_menu()
+            obj['source']['options']['regex_match'] = what
 
     # Select Target
     code, which_plugin = d.menu("To which target do you want to backup the files?",
@@ -281,6 +298,7 @@ def edit_sync_pair(what):
         main_menu()
     
     obj['target']['name'] = which_plugin.lower()
+
     # Is the Target auth token based?
     if which_plugin in [ "Dropbox" ]:
         token = find_exsisting_token_dialog(which_plugin.lower())
@@ -296,6 +314,7 @@ def edit_sync_pair(what):
     # The Target is not auth token based
     else:
         if which_plugin == 'Local':
+            # Sadly dselect is not supported in python 2
             code, what = d.inputbox("Where do you want to save the data?",
                             init= obj['target']['options'].get('storage_path', ""))
             if code != 0:
