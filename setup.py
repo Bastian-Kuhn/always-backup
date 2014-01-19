@@ -103,9 +103,6 @@ def find_exsisting_token(plugin):
 def general_config():
     cfg = get_config()
     ncfg = cfg['global']
-    code, what = d.inputbox("Storage dir (must be writeable)", init=ncfg['base_path'])
-    if code == 0:
-        cfg['global']['base_path'] = what
     if d.yesno("Do you want always backup running in verbose mode?") == d.DIALOG_OK:
         cfg['global']['verbose'] = True
     else:
@@ -275,7 +272,6 @@ def edit_sync_pair(what):
         elif which_plugin == 'Dropbox':
             obj['source']['options']['auth_token'] = auth_dropbox()
 
-    # Currently only local possible
     # Select Target
     code, which_plugin = d.menu("To which target do you want to backup the files?",
                        choices=[ ('Local', 'Save the files to your Hardisk'),
@@ -285,16 +281,27 @@ def edit_sync_pair(what):
         main_menu()
     
     obj['target']['name'] = which_plugin.lower()
+    # Is the Target auth token based?
     if which_plugin in [ "Dropbox" ]:
         token = find_exsisting_token_dialog(which_plugin.lower())
         if token:
              obj['target']['options']['auth_token'] = token
         else:
-            if which_plugin == 'Evernote':
-                obj['target']['options']['auth_token'] = auth_evernote()
-
-            elif which_plugin == 'Dropbox':
+            if which_plugin == 'Dropbox':
                 obj['target']['options']['auth_token'] = auth_dropbox()
+            # Evernote is not usable as target yet
+            #elif which_plugin == 'Evernote':
+            #    obj['target']['options']['auth_token'] = auth_evernote()
+
+    # The Target is not auth token based
+    else:
+        if which_plugin == 'Local':
+            code, what = d.inputbox("Where do you want to save the data?",
+                            init= obj['target']['options'].get('storage_path', ""))
+            if code != 0:
+                main_menu()
+            obj['target']['options']['storage_path'] = what
+
          
     pairs.append(obj)
     cfg['sync_pairs'] = pairs

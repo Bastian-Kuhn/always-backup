@@ -14,13 +14,10 @@ class awb_local(awb_plugin.awb_plugin):
 
 
     def get_data_list(self):
-       try:
-           return eval(file("%s/%s/state" % (self.cfg['base_path'],self.name)).read())
-       except:
-           return []
+        pass
 
     def save_data(self, filename, path, data):
-        full_path = "%s/%s/%s" % ( self.cfg['base_path'], self.name, path )
+        full_path = "%s/%s" % ( self.local_cfg['storage_path'], path )
         try:
             os.makedirs(full_path)
         except os.error:
