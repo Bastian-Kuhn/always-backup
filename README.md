@@ -22,7 +22,11 @@ the internal links might not work. But if copy the files to your Harddisk everth
 The reason is that Dropbox adds Auth information to each url. The urls in the html file doesn't have this
 information in the urls.
 
-While the App is reviewed by Evernote only Sandbox sync is possible.
+Currently is the Evernote Module not working. The reason is that the App Secrets inside the app
+are disabled by the Evernote. The actived a new secret for production use for me, but dont want me to
+include it in a Open Source Programm. So i have to find a solution. My idea is to create a web page 
+to handle the oAuth and return the Secret to copy and paste it in the setup. I'm not a big fan of this idea because in 
+this way your secret token a passed through my server. But i swear in don't save the token on my server.
 
 Dropbox
 =======
