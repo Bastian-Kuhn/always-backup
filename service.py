@@ -21,6 +21,7 @@ except:
 from awb_functions import *
 from awb_evernote import awb_evernote
 from awb_dropbox import awb_dropbox
+from awb_imap import awb_imap
 from awb_local import awb_local
 
 if not cfg.get('sync_pairs'):
@@ -31,6 +32,7 @@ plugins = {
  "evernote" : awb_evernote,
  "dropbox"  : awb_dropbox,
  "local"    : awb_local,
+ "imap"     : awb_imap,
 }
 #   .--helper func.--------------------------------------------------------.
 #   |        _          _                    __                            |

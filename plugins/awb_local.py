@@ -16,7 +16,7 @@ class awb_local(awb_plugin.awb_plugin):
     def get_data_list(self):
         file_list = []
         pattern = False
-        if self.local_cfg['regex_match'] != '':
+        if self.local_cfg.get('regex_match') and self.local_cfg['regex_match'] != '':
             pattern = re.compile( self.local_cfg['regex_match'] )
 
         for root, _, files in os.walk(self.local_cfg['storage_path']):
@@ -54,7 +54,7 @@ class awb_local(awb_plugin.awb_plugin):
         except os.error:
             pass
         if self.cfg['verbose']:
-            write_msg("info","Saving: " + full_path)
+            write_msg("info","Saving: " + full_path + "/" + filename)
         file("%s/%s" % (full_path, filename), "w").write(data)
     #.
 
@@ -66,7 +66,7 @@ class awb_local(awb_plugin.awb_plugin):
     #   |                \__, |\___|\__|  \__,_|\__,_|\__\__,_|                |
     #   |                |___/                                                 |
     #   +----------------------------------------------------------------------+
-    #   | Get data from Dropbox                                                |
+    #   |                                                                      | 
     #   '----------------------------------------------------------------------'
     def get_data(self, filelist, save):
         if self.cfg['verbose']:
