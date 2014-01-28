@@ -25,7 +25,7 @@ class awb_imap(awb_plugin.awb_plugin):
         self.job = direction
 
         user = self.local_cfg['user']
-        passwort = self.local_cfg['passwort']
+        passwort = self.local_cfg['password']
         server = self.local_cfg['server']
 
         try:
@@ -38,6 +38,23 @@ class awb_imap(awb_plugin.awb_plugin):
         if self.cfg['verbose']:
             write_msg("notice", "Connected imaps://%s@%s" % ( user, server ) )
     #.
+
+    # The parse function is be called from inside (get_data_list)
+    # and also from outsite, if a plugin has to sync emal files to imap.
+    # If we called it from inside we need num, the message num.
+    # num is the id we need to download the mail in the next stept.
+    def parse_function(self, filehandle, filename, path, num=False):
+        if type(filehandle) == file:
+            msg = email.message_from_file(filehandle)
+        else:
+            msg = email.message_from_string(filehandle)
+        if not filename:
+            filename = msg['MESSAGE-ID']
+        return ( filename, { "name"        : email.Header.decode_header(msg['subject'])[0][0],
+                             "upd_attr"    : msg['MESSAGE-ID'],
+                             "path"        : path,
+                             'download_id' : num,
+                                    })
     #   .--get data list-------------------------------------------------------.
     #   |                    _         _       _          _ _     _            |
     #   |          __ _  ___| |_    __| | __ _| |_ __ _  | (_)___| |_          |
@@ -48,19 +65,22 @@ class awb_imap(awb_plugin.awb_plugin):
     #   +----------------------------------------------------------------------+
     #   |                                                                      | 
     #   '----------------------------------------------------------------------'
-    def get_data_list(self):
+    def get_data_list(self, target, parsef ):
+        # TODO: There must be a way to speed up here.
+        # E.g: Get list and Get data mixed together.
+        # But this may leads to problems in plugins like evernote.
+        # I have to think about it...
         if self.cfg['verbose']:
-            write_msg("info", "Getting list of mails (This maye take a long while)")
+            write_msg("info", "Getting list of mails (This maye take a long time)")
         files = []
-        self.connect.select(self.local_cfg['folder'])
+        folder = "INBOX"
+        if self.local_cfg['folder'] != "":
+            folder = self.local_cfg['folder']
+        self.connect.select(folder)
         typ, data = self.connect.search(None, 'ALL')
         for num in data[0].split():
-            typ, data = self.connect.fetch(num, '(BODY[HEADER.FIELDS (MESSAGE-ID)])')
-            msg_id =  data[0][1].strip().split()[1]
-            files.append(( num, { "name"       : False, # Not known here
-                                  "upd_attr"   : msg_id,
-                                  "path"       : self.local_cfg['folder'],
-                                }))
+            typ, data = self.connect.fetch(num, '(BODY[HEADER])')
+            files.append( self.parse_function( data[0][1], False, self.local_cfg['folder'], num ) )
         return files
 
     #.
@@ -78,16 +98,12 @@ class awb_imap(awb_plugin.awb_plugin):
         if self.cfg['verbose']:
             write_msg("notice", "Now Syncing the Files")
 
-        for msg_id, data in filelist:
+        for name, data in filelist:
             if self.cfg['verbose']:
-                write_msg("info","Downloading Msg: " + msg_id)
+                write_msg("info","Downloading Msg: " + name)
+            msg_id = data['download_id']
             typ, msg_data = self.connect.fetch(msg_id, '(RFC822)')
-            for response_part in msg_data:
-                if isinstance(response_part, tuple):
-                    msg = email.message_from_string(response_part[1])
-                    subject, encoding = email.Header.decode_header(msg['subject'])[0]
-                    break
-            filename = str(msg_id) + "_" + subject.replace(' ','_') + ".eml"
+            filename = str(msg_id) + "_" + clean_filename(data['name']) + ".eml"
             save(filename, data['path'], msg_data[0][1]) 
     #.
     #   .--save data-----------------------------------------------------------.
@@ -101,11 +117,10 @@ class awb_imap(awb_plugin.awb_plugin):
     #   |                                                                      |
     #   '----------------------------------------------------------------------'
     def save_data(self, filename, path, data):
-        if not filename.endswith('.eml'):
-            if self.cfg['debug']:
-                write_msg('notice', filename + " not ending with .eml ")
-            return
         if self.cfg['verbose']:
             write_msg("info","Uploading: " + filename)
         self.connect.append(self.local_cfg['folder'], '', '', str(data))
     #.
+
+    def close(self):
+        self.connect.logout()

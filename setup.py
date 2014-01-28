@@ -227,6 +227,32 @@ def auth_dropbox():
     return access_token
 #.
 
+def config_imap(what, prefil):
+    code, server = d.inputbox("Address of the IMAP Server",
+                      init = prefil.get('server', ''))
+    if code != 0:
+        main_menu()
+
+    code, user = d.inputbox("Username to connect",
+                      init = prefil.get('user', ''))
+    if code != 0:
+        main_menu()
+
+    code, password = d.inputbox("Password",
+                      init = prefil.get('password', ''))
+    if code != 0:
+        main_menu()
+
+    code, folder = d.inputbox("Folder (Leave empty to select INBOX)",
+                      init = prefil.get('folder', ''))
+    if code != 0:
+        main_menu()
+
+    return { 'user' : user, 
+             'server' : server, 
+             'password' : password,
+             'folder' : folder }
+
 def edit_sync_pair(what):
     #if int we edit, string its a new one
     cfg = get_config()
@@ -258,6 +284,7 @@ def edit_sync_pair(what):
                        choices=[ ('Local',  "Get all Files from a location on your Harddisk" ),
                                  ('Evernote', 'Get all Notes from Evernote®'),
                                  ('Dropbox', 'Get all Files from Dropbox®'),
+                                 ('IMAP', 'Read mails from a IMAP folder'),
                        ])
     if code != 0:
         main_menu()
@@ -288,11 +315,14 @@ def edit_sync_pair(what):
             if code != 0:
                 main_menu()
             obj['source']['options']['regex_match'] = what
+        elif which_plugin == 'IMAP':
+            obj['source']['options'] = config_imap('source', obj['source']['options'])
 
     # Select Target
     code, which_plugin = d.menu("To which target do you want to backup the files?",
                        choices=[ ('Local', 'Save the files to your Hardisk'),
                                  ('Dropbox', 'Put the files to Dropbox®'),
+                                 ('IMAP', 'Upload eml files to a IMAP folder'),
                        ])
     if code != 0:
         main_menu()
@@ -320,6 +350,8 @@ def edit_sync_pair(what):
             if code != 0:
                 main_menu()
             obj['target']['options']['storage_path'] = what
+        elif which_plugin == 'IMAP':
+            obj['target']['options'] = config_imap('target', obj['target']['options'])
 
          
     pairs.append(obj)
@@ -330,7 +362,15 @@ def edit_sync_pair(what):
     
 def sync_pairs():
     cfg = get_config()
-    choices = [ (str(x), y['name'] ) for x,y in enumerate( cfg.get('sync_pairs',[] )) ]
+    choices = []
+    for num, entry in enumerate( cfg.get('sync_pairs',[] )) :
+        name = ""
+        if entry.get('disabled'):
+            name = "#"
+        name += entry['name']
+        choices.append(( str(num), name ))
+        
+
     choices.append(("new", "Create a new Sync pair"))
     code, what = d.menu("Sync Pair Configuration. Sync pairs containing all Backup configuration",
                        choices=choices)
@@ -343,6 +383,7 @@ def sync_pairs():
 #.
 def main_menu():
     code, what = d.menu("Main",
+                       cancel = "Exit",
                        choices=[("(1)", "Set general Configuration"),
                                 ("(2)", "Sync Pair Configuration")])
 

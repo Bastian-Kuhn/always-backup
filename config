@@ -1,4 +1,5 @@
 {'global': {'debug': False,
+            'debug_source' : False,
             'run_as_service': False,
             'verbose': True},
 # 'sync_pairs': [

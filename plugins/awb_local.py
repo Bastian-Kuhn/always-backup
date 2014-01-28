@@ -13,28 +13,42 @@ class awb_local(awb_plugin.awb_plugin):
             write_msg("notice", "Init local Storage " + plugin_config['storage_path'] + "...")
 
 
-    def get_data_list(self):
+    def get_data_list(self, target, parsef):
+        if self.cfg['verbose']:
+            write_msg("info", "Getting list of local files")
         file_list = []
         pattern = False
         if self.local_cfg.get('regex_match') and self.local_cfg['regex_match'] != '':
             pattern = re.compile( self.local_cfg['regex_match'] )
-
+        if target in ['imap']:
+            if self.cfg['verbose']:
+                write_msg("notice", "I have to use a parsing function. So scanning of the files will take longer")
         for root, _, files in os.walk(self.local_cfg['storage_path']):
             for f in files:
                 fname = os.path.join(root, f)
                 if pattern and not re.match(pattern, fname):
                     continue
-                try:
-                    stat = str(os.stat(fname).st_atime)
-                except:
-                    if self.cfg['debug']:
-                        write_msg("debug", "Cannot stat: " + fname )
-                    continue
-                 
-                file_list.append((fname, { "name"       : fname.split('/')[-1],
-                                       "upd_attr"   : stat,
-                                       "path"       : fname.rsplit('/', 1)[0],
-                                       "infos"      : {} } ))
+                filename = fname.split('/')[-1]
+                path = fname.rsplit('/', 1)[0]
+                # Paths are always relative to the target_plugin.
+                rpath = path.replace(self.local_cfg['storage_path'], '') 
+                if target == 'imap':
+                    file_list.append( parsef(file(fname), filename, rpath) )
+                else:
+                    # Normal Filesystem listing with last modification time as upd_attribte
+                    try:
+                        stat = str(os.stat(fname).st_mtime)
+                    except:
+                        if self.cfg['debug']:
+                            write_msg("debug", "Cannot stat: " + fname )
+                        continue
+
+                    # So we have to replace the storage path to be compatible
+                    # whit other plugins
+                    file_list.append((fname, { "name"       : filename, 
+                                               "upd_attr"   : stat,
+                                               "path"       : rpath,
+                                               "infos"      : {} } ))
         return file_list
 
     #   .--save data-----------------------------------------------------------.
@@ -75,6 +89,6 @@ class awb_local(awb_plugin.awb_plugin):
         for ident, data in filelist:
             if self.cfg['verbose']:
                 write_msg("info","Getting: " + ident)
-            f = file(ident) 
+            f = file("%s/%s/%s" % ( self.local_cfg['storage_path'], data['path'], ident)) 
             save(data["name"], data['path'], f.read()) 
     #.

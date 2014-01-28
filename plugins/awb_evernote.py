@@ -85,7 +85,7 @@ class awb_evernote(awb_plugin.awb_plugin):
     #   +----------------------------------------------------------------------+
     #   |   Get a list of all all remote notes from evernote                   |
     #   '----------------------------------------------------------------------'
-    def get_data_list(self):
+    def get_data_list(self, target, parsef ):
         file_list = [] 
         if self.cfg['verbose']:
             write_msg("info", "Getting Notebooks with list of notes")

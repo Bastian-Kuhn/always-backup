@@ -38,6 +38,11 @@ The Local Plugin can be provieded with a path and a RegEx.
 So it is possible to Backup Files based on a Regex to another plugin.
 The plugin can act as source and as target for Backups
 
+IMAP
+====
+The IMAP plugin is able to sync mails from one IMAP Server Folder to another Folder on another server,
+EML Files from filesystem like plugin sources to IMAP,
+and Mails from a Server to a filesystem like plugin target.
 
 About Always Backup
 ===================

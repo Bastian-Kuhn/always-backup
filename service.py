@@ -14,9 +14,14 @@ except:
 #getting the config
 cfg = eval(file('config').read())
 try:
-    cfg = eval(file( config_dir + 'local.config' ).read())
+    user_cfg = eval(file( config_dir + 'local.config' ).read())
+    for key, val in user_cfg['global'].items():
+        cfg['global'][key] = val
+    cfg['sync_pairs'] = user_cfg['sync_pairs']
 except:
     pass
+if cfg['global']['debug_source'] or cfg['global']['debug']:
+    import pprint
 
 from awb_functions import *
 from awb_evernote import awb_evernote
@@ -51,17 +56,6 @@ def get_diff(source, target):
         if values['upd_attr'] not in [ y['upd_attr'] for x, y in target ]:
             missing_files.append(( ident, values))
     return missing_files
-
-def save_stat_file(data, folder):
-    path = config_dir + folder + "-state" 
-    file(path, "w").write(str(data))
-
-def get_stat_file(folder):
-    path = config_dir + folder + "-state" 
-    try:
-        return eval(file(path).read())
-    except:
-        return []
 
 def get_update_state(folder):
     path = config_dir + folder + "-upd_state" 
@@ -123,12 +117,25 @@ def service_sync():
                                                'target')
                 if need_sync:
                     #Get a list of the files we want to sync
-                    source_files = source.get_data_list()
-                    missing_files = get_diff(source_files, get_stat_file(job['name']))
-                    #let source pull function push it to the target push function
-                    source.get_data(missing_files, target.save_data)
-                    #Save out stat file that we can compare next time
-                    save_stat_file(source_files, job['name'])
+                    source_files = source.get_data_list(target_name, target.parse_function)
+                    target_files = target.get_data_list(False, False)
+                    missing_files = get_diff(source_files, target_files) 
+                    if cfg['global']['debug_source']:
+                        write_msg("info", "Source Files")
+                        pprint.pprint(source_files)
+                        write_msg("info", "Target Files")
+                        pprint.pprint(target_files)
+                        write_msg("info", "Missing Files")
+                        pprint.pprint(missing_files)
+
+                    if len(missing_files) > 0:
+                        #let source pull function push it to the target push function
+                        source.get_data(missing_files, target.save_data)
+                    else:
+                        if cfg['global']['verbose']:
+                            write_msg('notice', "Noting to do")
+                target.close()
+                source.close()
 
         else:
             if cfg['global']['verbose']:

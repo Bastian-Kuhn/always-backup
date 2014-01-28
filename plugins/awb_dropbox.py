@@ -63,7 +63,7 @@ class awb_dropbox(awb_plugin.awb_plugin):
 
         return files
 
-    def get_data_list(self):
+    def get_data_list(self, target, parsef ):
         return self.get_file_helper([])
 
     #.

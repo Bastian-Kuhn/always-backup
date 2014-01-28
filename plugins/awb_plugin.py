@@ -17,11 +17,17 @@ class awb_plugin(object):
     def get_sync_state(self):
         return True, True
 
-    def get_data_list(self):
+    def get_data_list(self, target, parsef ):
         return []
 
     def get_data(self,filelist, save):
         return False
 
     def save_data(self, filename, path, data):
+        pass
+
+    def parse_function(self, filehandle, path='/'):
+        return False
+
+    def close(self):
         pass
