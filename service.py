@@ -135,8 +135,12 @@ def service_sync():
                     # way important meta information was missing and 
                     # Sync from plugins like dropbox starts everytime from
                     # the beginning
-                    #target_files = target.get_data_list(False, False)
                     target_files = get_stat_file(job['name'])
+
+                    if len(target_files) == 0:
+                        if cfg['global']['verbose']:
+                            write_msg('info', "We have no cache information about files on target")
+                        target_files = target.get_data_list(False, False)
                         
                     missing_files = get_diff(source_files, target_files) 
                     if cfg['global']['debug_source']:
