@@ -57,6 +57,17 @@ def get_diff(source, target):
             missing_files.append(( ident, values))
     return missing_files
 
+def save_stat_file(data, folder):
+    path = config_dir + folder + "-state"
+    file(path, "w").write(str(data))
+
+def get_stat_file(folder):
+    path = config_dir + folder + "-state"
+    try:
+        return eval(file(path).read())
+    except:
+        return []
+
 def get_update_state(folder):
     path = config_dir + folder + "-upd_state" 
     try:
@@ -118,7 +129,15 @@ def service_sync():
                 if need_sync:
                     #Get a list of the files we want to sync
                     source_files = source.get_data_list(target_name, target.parse_function)
-                    target_files = target.get_data_list(False, False)
+
+                    # I tryed to get live data instead using the catched
+                    # state file, but i running in trouble because this 
+                    # way important meta information was missing and 
+                    # Sync from plugins like dropbox starts everytime from
+                    # the beginning
+                    #target_files = target.get_data_list(False, False)
+                    target_files = get_stat_file(job['name'])
+                        
                     missing_files = get_diff(source_files, target_files) 
                     if cfg['global']['debug_source']:
                         write_msg("info", "Source Files")
@@ -131,6 +150,7 @@ def service_sync():
                     if len(missing_files) > 0:
                         #let source pull function push it to the target push function
                         source.get_data(missing_files, target.save_data)
+                        save_stat_file(source_files, job['name'])
                     else:
                         if cfg['global']['verbose']:
                             write_msg('notice', "Noting to do")
