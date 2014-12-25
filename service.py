@@ -107,11 +107,11 @@ def service_sync():
                 source_name = job['source']['name']
                 target_name = job['target']['name']
 
-                try:
-                    path = "%s/%s/" % (cfg['global']['base_path'], job['name'])
-                    os.makedirs(path)
-                except os.error:
-                    pass
+                #try:
+                #    path = "%s/%s/" % (cfg['global']['base_path'], job['name'])
+                #    os.makedirs(path)
+                #except os.error:
+                #    pass
 
                 updState    = get_update_state( job['name'] )
                 source = plugins[source_name]( job['name'], 
@@ -134,7 +134,7 @@ def service_sync():
 
                     # I tryed to get live data instead using the catched
                     # state file, but i running in trouble because this 
-                    # way important meta information was missing and 
+                    # way important meta information were missing and 
                     # Sync from plugins like dropbox starts everytime from
                     # the beginning
                     target_files = get_stat_file(job['name'])

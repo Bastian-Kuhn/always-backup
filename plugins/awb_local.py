@@ -89,6 +89,6 @@ class awb_local(awb_plugin.awb_plugin):
         for ident, data in filelist:
             if self.cfg['verbose']:
                 write_msg("info","Getting: " + ident)
-            f = file("%s/%s/%s" % ( self.local_cfg['storage_path'], data['path'], ident)) 
+            f = file("%s/%s" % ( data['path'], ident)) 
             save(data["name"], data['path'], f.read()) 
     #.
