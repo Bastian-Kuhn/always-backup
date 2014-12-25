@@ -24,21 +24,23 @@ if cfg['global']['debug_source'] or cfg['global']['debug']:
     import pprint
 
 from awb_functions import *
-from awb_evernote import awb_evernote
-from awb_dropbox import awb_dropbox
-from awb_imap import awb_imap
-from awb_local import awb_local
-
 if not cfg.get('sync_pairs'):
     write_msg("error", "You have to configure me first. Please run ./setup.py")
     sys.exit()
 
-plugins = {
- "evernote" : awb_evernote,
- "dropbox"  : awb_dropbox,
- "local"    : awb_local,
- "imap"     : awb_imap,
-}
+# Generate list of needed plugins and import them:
+needed_plugins = []
+plugins = {}
+for entry in cfg['sync_pairs']:
+    for what in ['source', 'target']:
+        plugin = entry[what]['name']
+        if plugin not in needed_plugins:
+            needed_plugins.append(plugin)
+            exec("from awb_%s import awb_%s" % (plugin, plugin))
+            exec("plugins['%s'] = awb_%s" % (plugin, plugin))
+
+
+
 #   .--helper func.--------------------------------------------------------.
 #   |        _          _                    __                            |
 #   |       | |__   ___| |_ __   ___ _ __   / _|_   _ _ __   ___           |
